@@ -1,8 +1,8 @@
 pragma solidity ^0.4.11;
 
-import './Ink.sol';
+import './InkProtocol.sol';
 
-contract TestNetInk is Ink {
+contract TestNetInk is InkProtocol {
   string public constant name = "Ink Protocol (TestNet)";
   string public constant symbol = "TESTXNK";
 

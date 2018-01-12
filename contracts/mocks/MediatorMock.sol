@@ -1,7 +1,7 @@
 pragma solidity ^0.4.11;
 
 import '../InkMediator.sol';
-import '../Ink.sol';
+import '../InkProtocol.sol';
 
 contract MediatorMock is InkMediator {
   function requestMediator(uint _transactionId, uint _transactionAmount) external returns (bool, uint32) {
@@ -11,15 +11,15 @@ contract MediatorMock is InkMediator {
   }
 
   function refundTransaction(uint _transactionId, address _ink) external {
-    Ink(_ink).refundTransactionByMediator(_transactionId);
+    InkProtocol(_ink).refundTransactionByMediator(_transactionId);
   }
 
   function confirmTransaction(uint _transactionId, address _ink) external {
-    Ink(_ink).confirmTransactionByMediator(_transactionId);
+    InkProtocol(_ink).confirmTransactionByMediator(_transactionId);
   }
 
   function settleTransaction(uint _transactionId, uint _buyerAmount, uint _sellerAmount, address _ink) external {
-    Ink(_ink).settleTransactionByMediator(_transactionId, _buyerAmount, _sellerAmount);
+    InkProtocol(_ink).settleTransactionByMediator(_transactionId, _buyerAmount, _sellerAmount);
   }
 
   function confirmTransactionFee(uint _transactionAmount) external returns (uint) {

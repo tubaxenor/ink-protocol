@@ -1,10 +1,10 @@
 const $ink = require("./utils")
-const InkMock = artifacts.require("./mocks/InkMock.sol")
+const InkProtocolMock = artifacts.require("./mocks/InkProtocolMock.sol")
 const commaNumber = require("comma-number")
 
 module.exports = (accounts) => {
   beforeEach(async () => {
-    token = await InkMock.new()
+    token = await InkProtocolMock.new()
   })
 
   buyer = accounts[1]
