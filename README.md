@@ -20,7 +20,7 @@ Ink Protocol solves some of the most common and difficult issues with buying and
 - Decentralized escrow with third party dispute resolution
 - Mediation and Transaction Fees
 - Linked Addresses
-- Authorized Agents
+- [Authorized Agents](https://github.com/InkProtocol/ink-protocol/wiki/Authorized-Agents)
 
 ## Ethereum Main Network
 
