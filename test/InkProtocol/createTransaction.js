@@ -1,12 +1,12 @@
 const $ink = require("./utils")
-const InkMock = artifacts.require("./InkMock.sol")
+const InkProtocolMock = artifacts.require("./InkProtocolMock.sol")
 const MediatorMock = artifacts.require("./MediatorMock.sol")
 const PolicyMock = artifacts.require("./PolicyMock.sol")
 const commaNumber = require("comma-number")
 
 module.exports = (accounts) => {
   beforeEach(async () => {
-    token = await InkMock.new()
+    token = await InkProtocolMock.new()
     mediator = await MediatorMock.new()
     policy = await PolicyMock.new()
     metadata = $ink.metadataToHash({title: "Title"})

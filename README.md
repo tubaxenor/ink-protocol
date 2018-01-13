@@ -9,7 +9,7 @@ Ink Protocol is implemented on Ethereum as a Smart Contract and includes an ERC2
 - Fixed supply (500,000,000 `XNK`)
 - Fractionally divisible
 - Non-inflationary
-- Fungible and transferable, likely via third party exchanges
+- Fungible and transferable
 
 ##### Smart Contract features
 
@@ -19,8 +19,8 @@ Ink Protocol solves some of the most common and difficult issues with buying and
 - Decentralized reputation
 - Decentralized escrow with third party dispute resolution
 - Mediation and Transaction Fees
-- Linked Addresses
-- Authorized Agents
+- [Linked Addresses](https://github.com/InkProtocol/ink-protocol/wiki/Linked-Addresses)
+- [Authorized Agents](https://github.com/InkProtocol/ink-protocol/wiki/Authorized-Agents)
 
 ## Ethereum Main Network
 

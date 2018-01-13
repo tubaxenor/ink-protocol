@@ -1,9 +1,9 @@
 const $ink = require("./utils")
-const InkMock = artifacts.require("./mocks/InkMock.sol")
+const InkProtocolMock = artifacts.require("./mocks/InkProtocolMock.sol")
 
 module.exports = (accounts) => {
   beforeEach(async () => {
-    token = await InkMock.new()
+    token = await InkProtocolMock.new()
     user = accounts[1]
     agent = accounts[2]
   })

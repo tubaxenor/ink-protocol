@@ -4,7 +4,8 @@ import 'zeppelin-solidity/contracts/token/StandardToken.sol';
 import './InkMediator.sol';
 import './InkPolicy.sol';
 
-contract Ink is StandardToken {
+/// @title Ink Protocol: Decentralized reputation and payments for peer-to-peer marketplaces.
+contract InkProtocol is StandardToken {
   string public constant name = "Ink Protocol";
   string public constant symbol = "XNK";
   uint8 public constant decimals = 18;
@@ -157,16 +158,11 @@ contract Ink is StandardToken {
     address indexed to
   );
 
-  event DebugUint(string _name, uint _uint);
-  event DebugBool(string _name, bool _bool);
-  event DebugAddress(string _name, address _address);
-  event DebugString(string _string);
-
   /*
     Constructor
   */
 
-  function Ink() public {
+  function InkProtocol() public {
     // TODO: Add distribution logic here.
   }
 

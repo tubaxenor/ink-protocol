@@ -1,6 +1,6 @@
 const { promisify } = require("util")
 const EthereumUtil = require("ethereumjs-util")
-const InkMock = artifacts.require("./mocks/InkMock.sol")
+const InkProtocolMock = artifacts.require("./mocks/InkProtocolMock.sol")
 const MediatorMock = artifacts.require("./mocks/MediatorMock.sol")
 const PolicyMock = artifacts.require("./mocks/PolicyMock.sol")
 
@@ -203,7 +203,7 @@ async function createTransaction(buyer, seller, options = {}) {
     throw(`Unknown state: ${options.state}`)
   }
 
-  let token = options.token || await InkMock.new()
+  let token = options.token || await InkProtocolMock.new()
   let policy = options.policy || await PolicyMock.new()
   let mediator = options.mediator || await MediatorMock.new()
   let amount = options.amount || 100
