@@ -6,6 +6,7 @@ module.exports = (accounts) => {
   let token
   let buyer = accounts[1]
   let seller = accounts[2]
+  let agent = accounts[3]
   let amount = 100
 
   beforeEach(async () => {
