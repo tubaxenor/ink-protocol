@@ -5,18 +5,17 @@ const PolicyMock = artifacts.require("./mocks/PolicyMock.sol")
 const commaNumber = require("comma-number")
 
 module.exports = (accounts) => {
-  let token, mediator, policy, metadata
+  let token, mediator, policy
   let buyer = accounts[1]
   let seller = accounts[2]
   let agent = accounts[3]
   let amount = 100
-
+  metadata = $ink.metadataToHash({title: "Title"})
 
   beforeEach(async () => {
     token = await InkProtocolMock.new()
     mediator = await MediatorMock.new()
     policy = await PolicyMock.new()
-    metadata = $ink.metadataToHash({title: "Title"})
   })
 
   describe('#createTransactionForBuyerAndSeller()', () => {
@@ -92,33 +91,33 @@ module.exports = (accounts) => {
     }
 
     context("when create transaction for buyer and seller by buyer", () => {
-      this.shouldFail(accounts[1])
+      this.shouldFail(buyer)
     })
 
     context("when create transaction for buyer and seller by seller", () => {
-      this.shouldFail(accounts[2])
+      this.shouldFail(seller)
     })
 
     context("when create transaction for buyer and seller by authorized agent", () => {
       beforeEach(async () => {
-        await token.authorize(accounts[3], { from: accounts[1] })
-        await token.authorize(accounts[3], { from: accounts[2] })
+        await token.authorize(agent, { from: buyer })
+        await token.authorize(agent, { from: seller })
       })
-      this.shouldCreateTheTransactionForBuyerAndSeller(accounts[3])
+      this.shouldCreateTheTransactionForBuyerAndSeller(agent)
     })
 
     context("when create transaction for buyer and seller by agent (only authorized by seller)", () => {
       beforeEach(async () => {
-        await token.authorize(accounts[3], { from: accounts[2] })
+        await token.authorize(agent, { from: seller })
       })
-      this.shouldFail(accounts[2])
+      this.shouldFail(seller)
     })
 
     context("when create transaction for buyer and seller by agent (only authorized by buyer)", () => {
       beforeEach(async () => {
-        await token.authorize(accounts[3], { from: accounts[1] })
+        await token.authorize(agent, { from: buyer })
       })
-      this.shouldFail(accounts[3])
+      this.shouldFail(agent)
     })
   })
 }

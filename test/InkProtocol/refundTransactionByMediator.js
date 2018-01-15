@@ -4,15 +4,16 @@ const MediatorMock = artifacts.require("./mocks/MediatorMock.sol")
 const commaNumber = require("comma-number")
 
 module.exports = (accounts) => {
+  let token, mediator
+  let buyer = accounts[1]
+  let seller = accounts[2]
+  let agent = accounts[3]
+  let amount = 101
+
   beforeEach(async () => {
     token = await InkProtocolMock.new()
     mediator = await MediatorMock.new()
   })
-
-  buyer = accounts[1]
-  seller = accounts[2]
-  agent = accounts[3]
-  amount = 101
 
   describe("#refundTransactionByMediator()", () => {
     this.shouldFail = (sender) => {

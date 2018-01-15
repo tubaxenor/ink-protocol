@@ -3,11 +3,13 @@ const InkProtocolMock = artifacts.require("./mocks/InkProtocolMock.sol")
 const commaNumber = require("comma-number")
 
 module.exports = (accounts) => {
+  let token
+  let buyer = accounts[1]
+  let seller = accounts[2]
+  let agent = accounts[3]
+
   beforeEach(async () => {
     token = await InkProtocolMock.new()
-    buyer = accounts[1]
-    seller = accounts[2]
-    agent = accounts[3]
   })
 
   describe("#settleTransaction()", () => {
@@ -43,71 +45,71 @@ module.exports = (accounts) => {
 
     context("when settling the transaction by buyer", () => {
       context("before escalation expiry", () => {
-        this.shouldFail(accounts[1], false)
+        this.shouldFail(buyer, false)
       })
 
       context("after escalation expiry", () => {
         context("transaction amount: 100", () => {
-          this.shouldSettleTheTransaction(accounts[1], 100)
+          this.shouldSettleTheTransaction(buyer, 100)
         })
 
         context("transaction amount: 99", () => {
-          this.shouldSettleTheTransaction(accounts[1], 99)
+          this.shouldSettleTheTransaction(buyer, 99)
         })
       })
     })
 
     context ("when settling the transaction by seller", () => {
       context("before escalation expiry", () => {
-        this.shouldFail(accounts[2], false)
+        this.shouldFail(seller, false)
       })
 
       context("after escalation expiry", () => {
         context("transaction amount: 100", () => {
-          this.shouldSettleTheTransaction(accounts[2], 100)
+          this.shouldSettleTheTransaction(seller, 100)
         })
 
         context("transaction amount: 99", () => {
-          this.shouldSettleTheTransaction(accounts[2], 99)
+          this.shouldSettleTheTransaction(seller, 99)
         })
       })
     })
 
     context("when settling the transaction by authorized agent by buyer", () => {
       beforeEach(async () => {
-        await token.authorize(accounts[3], { from: accounts[1] })
+        await token.authorize(agent, { from: buyer })
       })
 
       context("before escalation expiry", () => {
-        this.shouldFail(accounts[3], false)
+        this.shouldFail(agent, false)
       })
 
       context("after escalation expiry", () => {
-        this.shouldSettleTheTransaction(accounts[3], 100)
+        this.shouldSettleTheTransaction(agent, 100)
       })
     })
 
     context("when settling the transaction by authorized agent by seller", () => {
       beforeEach(async () => {
-        await token.authorize(accounts[3], { from: accounts[2] })
+        await token.authorize(agent, { from: seller })
       })
 
       context("before escalation expiry", () => {
-        this.shouldFail(accounts[3], false)
+        this.shouldFail(agent, false)
       })
 
       context("after escalation expiry", () => {
-        this.shouldSettleTheTransaction(accounts[3], 100)
+        this.shouldSettleTheTransaction(agent, 100)
       })
     })
 
     context("when settling the transaction by unauthorized agent", () => {
       context("before escalation expiry", () => {
-        this.shouldFail(accounts[3], false)
+        this.shouldFail(agent, false)
       })
 
       context("after escalation expiry", () => {
-        this.shouldFail(accounts[3], false)
+        this.shouldFail(agent, false)
       })
     })
 

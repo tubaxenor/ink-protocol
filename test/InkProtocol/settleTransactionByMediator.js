@@ -4,15 +4,16 @@ const commaNumber = require("comma-number")
 const MediatorFeeMock = artifacts.require("./mocks/MediatorFeeMock.sol")
 
 module.exports = (accounts) => {
+  let token
+  let buyer = accounts[1]
+  let seller = accounts[2]
+  let agent = accounts[3]
+  let buyerAmount = 50
+  let sellerAmount = 50
+
   beforeEach(async () => {
     token = await InkProtocolMock.new()
   })
-
-  buyer = accounts[1]
-  seller = accounts[2]
-  agent = accounts[3]
-  buyerAmount = 50;
-  sellerAmount = 50;
 
   describe("#settleTransactionByMediator()", () => {
     this.shouldFail = (sender) => {

@@ -2,11 +2,13 @@ const $ink = require("./utils")
 const InkProtocolMock = artifacts.require("./mocks/InkProtocolMock.sol")
 
 module.exports = (accounts) => {
+  let ink
+  let sender = accounts[1]
+  let user = accounts[2]
+  let agent = accounts[3]
+
   beforeEach(async () => {
     ink = await InkProtocolMock.new()
-    sender = accounts[1]
-    user = accounts[2]
-    agent = accounts[3]
   })
 
   describe("#linkWith()", () => {

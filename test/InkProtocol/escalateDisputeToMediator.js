@@ -3,11 +3,13 @@ const InkProtocolMock = artifacts.require("./mocks/InkProtocolMock.sol")
 const commaNumber = require("comma-number")
 
 module.exports = (accounts) => {
+  let token
+  let buyer = accounts[1]
+  let seller = accounts[2]
+  let amount = 100
+
   beforeEach(async () => {
     token = await InkProtocolMock.new()
-    buyer = accounts[1]
-    seller = accounts[2]
-    amount = 100
   })
 
   describe("#escalateDisputeToMediator()", () => {
@@ -31,22 +33,22 @@ module.exports = (accounts) => {
     }
 
     context("when called by buyer", () => {
-      this.shouldFail(accounts[1])
+      this.shouldFail(buyer)
     })
 
     context("when called by seller", () => {
-      this.shouldEscalateDisputetoMediator(accounts[2])
+      this.shouldEscalateDisputetoMediator(seller)
     })
 
     context("when called by authorized agent", () => {
       beforeEach(async () => {
-        await token.authorize(accounts[3], { from: accounts[2] })
+        await token.authorize(agent, { from: seller })
       })
-      this.shouldEscalateDisputetoMediator(accounts[3])
+      this.shouldEscalateDisputetoMediator(agent)
     })
 
     context("when called by unauthorized agent", () => {
-      this.shouldFail(accounts[3])
+      this.shouldFail(agent)
     })
 
   })

@@ -3,12 +3,14 @@ const InkProtocolMock = artifacts.require("./mocks/InkProtocolMock.sol")
 const commaNumber = require("comma-number")
 
 module.exports = (accounts) => {
+  let token
+  let buyer = accounts[1]
+  let seller = accounts[2]
+  let agent = accounts[3]
+  let amount = 100
+
   beforeEach(async () => {
     token = await InkProtocolMock.new()
-    buyer = accounts[1]
-    seller = accounts[2]
-    agent = accounts[3]
-    amount = 100
   })
 
   describe("#refundTransaction()", () => {
@@ -84,49 +86,49 @@ module.exports = (accounts) => {
 
     context("when confirm transaction by buyer", () => {
       context("before escalation expiry", () => {
-        this.shouldFail(accounts[1])
-        this.shouldFailBeforeExpiry(accounts[1], false)
+        this.shouldFail(buyer)
+        this.shouldFailBeforeExpiry(buyer, false)
       })
 
       context("after escalation expiry", () => {
-        this.shouldFail(accounts[1])
-        this.shouldFailBeforeExpiry(accounts[1], true)
+        this.shouldFail(buyer)
+        this.shouldFailBeforeExpiry(buyer, true)
       })
     })
 
     context("when confirm transaction by seller", () => {
       context("before escalation expiry", () => {
-        this.shouldFailBeforeExpiry(accounts[2], false)
+        this.shouldFailBeforeExpiry(seller, false)
       })
 
       context("after escalation expiry", () => {
-        this.shouldRefundTheTransaction(accounts[2])
+        this.shouldRefundTheTransaction(seller)
       })
     })
 
     context("when confirm transaction by authorized agent", () => {
       beforeEach(async () => {
-        await token.authorize(accounts[3], { from: accounts[2] })
+        await token.authorize(agent, { from: seller })
       })
 
       context("before escalation expiry", () => {
-        this.shouldFailBeforeExpiry(accounts[3], false)
+        this.shouldFailBeforeExpiry(agent, false)
       })
 
       context("after escalation expiry", () => {
-        this.shouldRefundTheTransaction(accounts[3])
+        this.shouldRefundTheTransaction(agent)
       })
     })
 
     context("when confirm transaction by unauthorized agent", () => {
       context("before escalation expiry", () => {
-        this.shouldFail(accounts[3])
-        this.shouldFailBeforeExpiry(accounts[3], false)
+        this.shouldFail(agent)
+        this.shouldFailBeforeExpiry(agent, false)
       })
 
       context("after escalation expiry", () => {
-        this.shouldFail(accounts[3])
-        this.shouldFailBeforeExpiry(accounts[3], true)
+        this.shouldFail(agent)
+        this.shouldFailBeforeExpiry(agent, true)
       })
     })
   })

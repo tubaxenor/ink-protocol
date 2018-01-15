@@ -5,17 +5,17 @@ const PolicyMock = artifacts.require("./mocks/PolicyMock.sol")
 const commaNumber = require("comma-number")
 
 module.exports = (accounts) => {
-  let token, mediator, policy, metadata
+  let token, mediator, policy
   let buyer = accounts[1]
   let seller = accounts[2]
   let agent = accounts[3]
   let amount = 100
+  metadata = $ink.metadataToHash({title: "Title"})
 
   beforeEach(async () => {
     token = await InkProtocolMock.new()
     mediator = await MediatorMock.new()
     policy = await PolicyMock.new()
-    metadata = $ink.metadataToHash({title: "Title"})
   })
 
   describe('#createTransactionForBuyer()', () => {
