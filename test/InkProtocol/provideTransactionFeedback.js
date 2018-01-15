@@ -3,17 +3,18 @@ const InkProtocolMock = artifacts.require("./mocks/InkProtocolMock.sol")
 const commaNumber = require("comma-number")
 
 module.exports = (accounts) => {
+  let token
+  let buyer = accounts[1]
+  let seller = accounts[2]
+  let agent = accounts[3]
+  let amount = 100
+  let rating = 5
+  let comment = $ink.metadataToHash({ comment: "comment" })
+
   beforeEach(async () => {
     token = await InkProtocolMock.new()
     token.authorize(agent, { from: buyer })
   })
-
-  buyer = accounts[1]
-  seller = accounts[2]
-  agent = accounts[3]
-  amount = 100
-  rating = 5
-  comment = $ink.metadataToHash({ comment: "comment" })
 
   describe('#provideTransactionFeedback()', () => {
     context("when feedback is provided by seller", () => {

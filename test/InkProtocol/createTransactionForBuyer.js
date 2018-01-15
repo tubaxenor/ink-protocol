@@ -5,22 +5,24 @@ const PolicyMock = artifacts.require("./mocks/PolicyMock.sol")
 const commaNumber = require("comma-number")
 
 module.exports = (accounts) => {
+  let token, mediator, policy
+  let buyer = accounts[1]
+  let seller = accounts[2]
+  let agent = accounts[3]
+  let amount = 100
+  metadata = $ink.metadataToHash({title: "Title"})
+
   beforeEach(async () => {
     token = await InkProtocolMock.new()
     mediator = await MediatorMock.new()
     policy = await PolicyMock.new()
-    metadata = $ink.metadataToHash({title: "Title"})
   })
-
-  buyer = accounts[1]
-  seller = accounts[2]
-  agent = accounts[3]
-  amount = 100
 
   describe('#createTransactionForBuyer()', () => {
     this.shouldCreateTheTransactionForBuyer = (sender) => {
       it("creates a transaction for buyer", async () => {
         await token.transfer(buyer, amount)
+
         let tx = await token.createTransactionForBuyer(buyer, seller, amount, metadata, policy.address, mediator.address, { from: sender })
         let eventArgs = $ink.eventFromTx(tx, $ink.events.TransactionInitiated).args
 
@@ -50,6 +52,7 @@ module.exports = (accounts) => {
 
       it("creates a transaction without mediator for buyer", async () => {
         await token.transfer(buyer, amount)
+
         let tx = await token.createTransactionForBuyer(buyer, seller, amount, metadata, 0, 0, { from: sender })
         let eventArgs = $ink.eventFromTx(tx, $ink.events.TransactionInitiated).args
 

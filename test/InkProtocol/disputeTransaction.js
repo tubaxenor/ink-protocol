@@ -4,12 +4,14 @@ const PolicyMock = artifacts.require("./mocks/PolicyMock.sol")
 const commaNumber = require("comma-number")
 
 module.exports = (accounts) => {
+  let token
+  let buyer = accounts[1]
+  let seller = accounts[2]
+  let agent = accounts[3]
+  let amount = 100
+
   beforeEach(async () => {
     token = await InkProtocolMock.new()
-    buyer = accounts[1]
-    seller = accounts[2]
-    agent = accounts[3]
-    amount = 100
   })
 
   describe("#disputeTransaction()", () => {
@@ -51,45 +53,45 @@ module.exports = (accounts) => {
 
     context("when dispute started by buyer", () => {
       context("before fulfillment expiry", () => {
-        this.shouldFail(accounts[1], false)
+        this.shouldFail(buyer, false)
       })
 
       context("after fulfillment expiry", () => {
-        this.shouldDisputeTheTransaction(accounts[1])
+        this.shouldDisputeTheTransaction(buyer)
       })
     })
 
     context ("when dispute started by seller", () => {
       context("before fulfillment expiry", () => {
-        this.shouldFail(accounts[2], false)
+        this.shouldFail(seller, false)
       })
 
       context("after fulfillment expiry", () => {
-        this.shouldFail(accounts[2], true)
+        this.shouldFail(seller, true)
       })
     })
 
     context("when dispute started by authorized agent", () => {
       beforeEach(async () => {
-        await token.authorize(accounts[3], { from: accounts[1] })
+        await token.authorize(agent, { from: buyer })
       })
 
       context("before fulfillment expiry", () => {
-        this.shouldFail(accounts[3], false)
+        this.shouldFail(agent, false)
       })
 
       context("after fulfillment expiry", () => {
-        this.shouldDisputeTheTransaction(accounts[3])
+        this.shouldDisputeTheTransaction(agent)
       })
     })
 
     context("when dispute started by unauthorized agent", () => {
       context("before fulfillment expiry", () => {
-        this.shouldFail(accounts[3], false)
+        this.shouldFail(agent, false)
       })
 
       context("after fulfillment expiry", () => {
-        this.shouldFail(accounts[3], false)
+        this.shouldFail(agent, false)
       })
     })
   })
