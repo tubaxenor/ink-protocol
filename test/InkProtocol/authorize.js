@@ -2,10 +2,12 @@ const $ink = require("./utils")
 const InkProtocolMock = artifacts.require("./mocks/InkProtocolMock.sol")
 
 module.exports = (accounts) => {
+  let token
+  let user = accounts[1]
+  let agent = accounts[2]
+
   beforeEach(async () => {
     token = await InkProtocolMock.new()
-    user = accounts[1]
-    agent = accounts[2]
   })
 
   describe("#authorize()", () => {
@@ -14,7 +16,7 @@ module.exports = (accounts) => {
       assert.isTrue(await token.authorizedBy(user, { from: user }))
 
       await token.authorize(agent, { from: user })
-      
+
       assert.isTrue(await token.authorizedBy(user, { from: agent }))
     })
 

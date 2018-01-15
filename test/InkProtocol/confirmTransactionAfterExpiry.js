@@ -3,14 +3,15 @@ const InkProtocolMock = artifacts.require("./mocks/InkProtocolMock.sol")
 const commaNumber = require("comma-number")
 
 module.exports = (accounts) => {
+  let token
+  let buyer = accounts[1]
+  let seller = accounts[2]
+  let agent = accounts[3]
+  let amount = 100
+
   beforeEach(async () => {
     token = await InkProtocolMock.new()
   })
-
-  buyer = accounts[1]
-  seller = accounts[2]
-  agent = accounts[3]
-  amount = 100
 
   describe('#confirmTransactionAfterExpiry()', () => {
     this.shouldConfirmTheTransactionAfterExpiry = (sender) => {
