@@ -21,6 +21,7 @@ let files = [
   "./InkProtocol/confirmTransactionByMediator",
   "./InkProtocol/settleTransactionByMediator",
   "./InkProtocol/provideTransactionFeedback"
+  "./InkProtocol/transfer"
 ]
 
 for (let fileIndex in files) {

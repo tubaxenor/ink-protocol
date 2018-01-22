@@ -166,6 +166,23 @@ contract InkProtocol is StandardToken {
     // TODO: Add distribution logic here.
   }
 
+  /*
+    ERC20 functions
+  */
+
+  function transfer(address _to, uint256 _value) public returns (bool) {
+   // Don't allow token transfers to the Ink contract.
+   require(_to != address(this));
+
+   return super.transfer(_to, _value);
+  }
+
+  function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
+   // Don't allow token transfers to the Ink contract.
+   require(_to != address(this));
+
+   return super.transferFrom(_from, _to, _value);
+  }
 
   /*
     Agent functions
