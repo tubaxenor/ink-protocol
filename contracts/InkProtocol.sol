@@ -397,7 +397,7 @@ contract InkProtocol is StandardToken {
 
     TransactionRevoked({ id: _id });
 
-    _transferFromTransaction(_buyerFor(_transaction), _transaction.amount);
+    _transferFromEscrow(_buyerFor(_transaction), _transaction.amount);
 
     _cleanupTransaction(_id, _transaction, false);
   }
@@ -499,8 +499,8 @@ contract InkProtocol is StandardToken {
       sellerAmount: sellerAmount
     });
 
-    _transferFromTransaction(_buyerFor(_transaction), buyerAmount);
-    _transferFromTransaction(_transaction.seller, sellerAmount);
+    _transferFromEscrow(_buyerFor(_transaction), buyerAmount);
+    _transferFromEscrow(_transaction.seller, sellerAmount);
 
     _cleanupTransaction(_id, _transaction, true);
   }
@@ -537,9 +537,9 @@ contract InkProtocol is StandardToken {
       sellerMediatorFee: sellerMediatorFee
     });
 
-    _transferFromTransaction(_buyerFor(_transaction), _buyerAmount.sub(buyerMediatorFee));
-    _transferFromTransaction(_transaction.seller, _sellerAmount.sub(sellerMediatorFee));
-    _transferFromTransaction(_transaction.mediator, buyerMediatorFee.add(sellerMediatorFee));
+    _transferFromEscrow(_buyerFor(_transaction), _buyerAmount.sub(buyerMediatorFee));
+    _transferFromEscrow(_transaction.seller, _sellerAmount.sub(sellerMediatorFee));
+    _transferFromEscrow(_transaction.mediator, buyerMediatorFee.add(sellerMediatorFee));
 
     _cleanupTransaction(_id, _transaction, true);
   }
@@ -584,8 +584,8 @@ contract InkProtocol is StandardToken {
       TransactionConfirmedByMediator({ id: _id, mediatorFee: mediatorFee });
     }
 
-    _transferFromTransaction(_transferTo, _transaction.amount.sub(mediatorFee));
-    _transferFromTransaction(_transaction.mediator, mediatorFee);
+    _transferFromEscrow(_transferTo, _transaction.amount.sub(mediatorFee));
+    _transferFromEscrow(_transaction.mediator, mediatorFee);
 
     _cleanupTransaction(_id, _transaction, true);
   }
@@ -685,7 +685,7 @@ contract InkProtocol is StandardToken {
     return true;
   }
 
-  function _transferFromTransaction(address _to, uint256 _value) private returns (bool) {
+  function _transferFromEscrow(address _to, uint256 _value) private returns (bool) {
     if (_value > 0) {
       return _transferFrom(this, _to, _value);
     }
