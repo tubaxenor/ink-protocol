@@ -10,8 +10,8 @@ contract InkProtocol is StandardToken {
   string public constant symbol = "XNK";
   uint8 public constant decimals = 18;
 
-  // A total supply of 500,000,000 Ink Tokens.
-  uint public constant totalSupply = 500000000000000000000000000;
+  // A total supply of 500,000,000 Ink Tokens (XNK).
+  uint256 public constant totalSupply = 500000000000000000000000000;
 
   enum TransactionState {
     // This is an internal state to represent an uninitialized transaction.
@@ -39,120 +39,177 @@ contract InkProtocol is StandardToken {
     Completed                 // 18
   }
 
-  uint private globalTransactionId = 0;
+  // The running ID counter for all Ink Transactions.
+  uint256 private globalTransactionId = 0;
 
-  mapping(address => mapping(address => bool)) private agents;
-  mapping(uint => Transaction) internal transactions;
+  /**
+    Mapping of all agent authorizations.
+    {
+      user(address) => {
+        agent(address) => authorized(bool)
+      }
+    }
+  */
+  mapping(address => mapping(address => bool)) private agentAuthorizations;
 
+  // Mapping of all transactions by ID (globalTransactionId).
+  mapping(uint256 => Transaction) internal transactions;
+
+  // The struct definition for an Ink Transaction.
   struct Transaction {
+    // The creator of the transaction (this is always msg.sender).
     address creator;
+    // The address of the buyer on the transaction.
     address buyer;
+    // The address of the seller on the transaction.
     address seller;
+    // The address of the policy contract for the transaction.
     address policy;
+    // The address of the mediator contract for the transaction.
     address mediator;
+    // The time (seconds) for the mediation expiry. This value is retrieved
+    // from the mediator contract at creation of the transaction.
     uint32 mediationExpiry;
+    // The state of the transaction.
     TransactionState state;
-    uint stateTime;
-    uint amount;
+    // The (block) time that the transaction transitioned to its current state.
+    // This value is only set for the states that need it to be set (states
+    // with an expiry involved).
+    uint256 stateTime;
+    // The XNK amount of the transaction.
+    uint256 amount;
   }
 
+  // Event emitted when a transaction is initiated.
   event TransactionInitiated(
-    uint indexed id,
+    uint256 indexed id,
     address creator,
     address indexed buyer,
     address indexed seller,
     address policy,
     address mediator,
-    uint amount,
+    uint256 amount,
+    // A hash string representing the metadata for the transaction. This is
+    // somewhat arbitrary for the transaction. Only the transaction creator
+    // will really know the original contents of the metadata and may choose
+    // to share it at their discretion.
     bytes32 metadata
   );
 
+  // Event emitted when a transaction has been accepted by the seller.
   event TransactionAccepted(
-    uint indexed id
+    uint256 indexed id
   );
 
+  // Event emitted when a transaction has been disputed by the buyer.
   event TransactionDisputed(
-    uint indexed id
+    uint256 indexed id
   );
 
+  // Event emitted when a transaction is escalated to the mediator by the
+  // seller.
   event TransactionEscalated(
-    uint indexed id
+    uint256 indexed id
   );
 
+  // Event emitted when a transaction is revoked by the seller.
   event TransactionRevoked(
-    uint indexed id
+    uint256 indexed id
   );
 
+  // Event emitted when a transaction is revoked by the seller.
   event TransactionRefundedByMediator(
-    uint indexed id,
-    uint mediatorFee
+    uint256 indexed id,
+    uint256 mediatorFee
   );
 
+  // Event emitted when a transaction is settled by the mediator.
   event TransactionSettledByMediator(
-    uint indexed id,
-    uint buyerAmount,
-    uint sellerAmount,
-    uint buyerMediatorFee,
-    uint sellerMediatorFee
+    uint256 indexed id,
+    uint256 buyerAmount,
+    uint256 sellerAmount,
+    uint256 buyerMediatorFee,
+    uint256 sellerMediatorFee
   );
 
+  // Event emitted when a transaction is confirmed by the mediator.
   event TransactionConfirmedByMediator(
-    uint indexed id,
-    uint mediatorFee
+    uint256 indexed id,
+    uint256 mediatorFee
   );
 
+  // Event emitted when a transaction is confirmed by the buyer.
   event TransactionConfirmed(
-    uint indexed id,
-    uint mediatorFee
+    uint256 indexed id,
+    uint256 mediatorFee
   );
 
+  // Event emitted when a transaction is refunded by the seller.
   event TransactionRefunded(
-    uint indexed id,
-    uint mediatorFee
+    uint256 indexed id,
+    uint256 mediatorFee
   );
 
+  // Event emitted when a transaction is confirmed by the seller after the
+  // transaction expiry.
   event TransactionConfirmedAfterExpiry(
-    uint indexed id,
-    uint mediatorFee
+    uint256 indexed id,
+    uint256 mediatorFee
   );
 
+  // Event emitted when a transaction is confirmed by the buyer after it was
+  // disputed.
   event TransactionConfirmedAfterDispute(
-    uint indexed id,
-    uint mediatorFee
+    uint256 indexed id,
+    uint256 mediatorFee
   );
 
+  // Event emitted when a transaction is refunded by the seller after it was
+  // disputed.
   event TransactionRefundedAfterDispute(
-    uint indexed id,
-    uint mediatorFee
+    uint256 indexed id,
+    uint256 mediatorFee
   );
 
+  // Event emitted when a transaction is refunded by the buyer after the
+  // escalation expiry.
   event TransactionRefundedAfterExpiry(
-    uint indexed id,
-    uint mediatorFee
+    uint256 indexed id,
+    uint256 mediatorFee
   );
 
+  // Event emitted when a transaction is confirmed by the buyer after the
+  // mediation expiry.
   event TransactionConfirmedAfterEscalation(
-    uint indexed id,
-    uint mediatorFee
+    uint256 indexed id,
+    uint256 mediatorFee
   );
 
+  // Event emitted when a transaction is refunded by the seller after the
+  // mediation expiry.
   event TransactionRefundedAfterEscalation(
-    uint indexed id,
-    uint mediatorFee
+    uint256 indexed id,
+    uint256 mediatorFee
   );
 
+  // Event emitted when a transaction is settled by either the buyer or the
+  // seller after the mediation expiry.
   event TransactionSettled(
-    uint indexed id,
-    uint buyerAmount,
-    uint sellerAmount
+    uint256 indexed id,
+    uint256 buyerAmount,
+    uint256 sellerAmount
   );
 
+  // Event emitted when a transaction's feedback is updated by the creator.
   event FeedbackUpdated(
-    uint indexed transactionId,
+    uint256 indexed transactionId,
     uint8 rating,
     bytes32 comment
   );
 
+  // Event emitted an account is (unidirectionally) linked to another account.
+  // For two accounts to be acknowledged as linked, the linkage must be
+  // bidirectional.
   event AccountLinked(
     address indexed from,
     address indexed to
@@ -168,42 +225,49 @@ contract InkProtocol is StandardToken {
 
 
   /*
-    Agent functions
+    Agent authorization functions
+
+    These functions are used by user accounts to authorize and deauthorize
+    agents to act on their behalf.
   */
 
   function authorize(address _agent) external {
     require(_agent != address(0));
     require(msg.sender != _agent);
 
-    agents[msg.sender][_agent] = true;
+    agentAuthorizations[msg.sender][_agent] = true;
   }
 
   function deauthorize(address _agent) external {
     require(_agent != address(0));
     require(msg.sender != _agent);
 
-    delete agents[msg.sender][_agent];
+    delete agentAuthorizations[msg.sender][_agent];
   }
 
+  // Returns true if the msg.sender is authorized to act on behalf of _account.
   function authorizedBy(address _account) public view returns (bool) {
     require(_account != address(0));
 
-    return msg.sender == _account || agents[_account][msg.sender];
+    return msg.sender == _account || agentAuthorizations[_account][msg.sender];
   }
 
 
   /*
     Account linking functions
+
+    Functions used by users and agents to declare a unidirectionally account
+    linking.
   */
 
-  function linkWith(address _account) external {
-    _link(msg.sender, _account);
-  }
+  // Called by a user who wishes to link with another _account.
+  function link(address _to) external {
+    require(_to != address(0));
 
-  function link(address _from, address _to) external {
-    require(authorizedBy(_from));
-
-    _link(_from, _to);
+    AccountLinked({
+      from: msg.sender,
+      to: _to
+    });
   }
 
 
@@ -211,69 +275,64 @@ contract InkProtocol is StandardToken {
     Transaction functions
   */
 
-  function createTransaction(address _seller, uint _amount, bytes32 _metadata, address _policy, address _mediator) external {
-    _createTransaction(msg.sender, _seller, _amount, _metadata, _policy, _mediator, false);
+  function createTransaction(address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator) external {
+    _createTransaction(msg.sender, _seller, _amount, _metadata, _policy, _mediator);
   }
 
-  function createTransactionForBuyer(address _buyer, address _seller, uint _amount, bytes32 _metadata, address _policy, address _mediator) external {
+  function createTransactionForBuyer(address _buyer, address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator) external {
     require(authorizedBy(_buyer));
-    _createTransaction(_buyer, _seller, _amount, _metadata, _policy, _mediator, false);
+    _createTransaction(_buyer, _seller, _amount, _metadata, _policy, _mediator);
   }
 
-  function createTransactionForBuyerAndSeller(address _buyer, address _seller, uint _amount, bytes32 _metadata, address _policy, address _mediator) external {
-    require(authorizedBy(_buyer) && authorizedBy(_seller));
-    _createTransaction(_buyer, _seller, _amount, _metadata, _policy, _mediator, true);
-  }
-
-  function revokeTransaction(uint _id) external {
+  function revokeTransaction(uint256 _id) external {
     _revokeTransaction(_id, _findTransactionForBuyer(_id));
   }
 
-  function acceptTransaction(uint _id) external {
+  function acceptTransaction(uint256 _id) external {
     _acceptTransaction(_id, _findTransactionForSeller(_id));
   }
 
-  function confirmTransaction(uint _id) external {
+  function confirmTransaction(uint256 _id) external {
     _confirmTransaction(_id, _findTransactionForBuyer(_id));
   }
 
-  function confirmTransactionAfterExpiry(uint _id) external {
+  function confirmTransactionAfterExpiry(uint256 _id) external {
     _confirmTransactionAfterExpiry(_id, _findTransactionForSeller(_id));
   }
 
-  function refundTransaction(uint _id) external {
+  function refundTransaction(uint256 _id) external {
     _refundTransaction(_id, _findTransactionForSeller(_id));
   }
 
-  function refundTransactionAfterExpiry(uint _id) external {
+  function refundTransactionAfterExpiry(uint256 _id) external {
     _refundTransactionAfterExpiry(_id, _findTransactionForBuyer(_id));
   }
 
-  function disputeTransaction(uint _id) external {
+  function disputeTransaction(uint256 _id) external {
     _disputeTransaction(_id, _findTransactionForBuyer(_id));
   }
 
-  function escalateDisputeToMediator(uint _id) external {
+  function escalateDisputeToMediator(uint256 _id) external {
     _escalateDisputeToMediator(_id, _findTransactionForSeller(_id));
   }
 
-  function settleTransaction(uint _id) external {
+  function settleTransaction(uint256 _id) external {
     _settleTransaction(_id, _findTransactionForParty(_id));
   }
 
-  function refundTransactionByMediator(uint _id) external {
+  function refundTransactionByMediator(uint256 _id) external {
     _refundTransactionByMediator(_id, _findTransactionForMediator(_id));
   }
 
-  function confirmTransactionByMediator(uint _id) external {
+  function confirmTransactionByMediator(uint256 _id) external {
     _confirmTransactionByMediator(_id, _findTransactionForMediator(_id));
   }
 
-  function settleTransactionByMediator(uint _id, uint _buyerAmount, uint _sellerAmount) external {
+  function settleTransactionByMediator(uint256 _id, uint256 _buyerAmount, uint256 _sellerAmount) external {
     _settleTransactionByMediator(_id, _findTransactionForMediator(_id), _buyerAmount, _sellerAmount);
   }
 
-  function provideTransactionFeedback(uint _id, uint8 _rating, bytes32 _comment) external {
+  function provideTransactionFeedback(uint256 _id, uint8 _rating, bytes32 _comment) external {
     _provideTransactionFeedback(_id, _findTransactionForFeedback(_id), _rating, _comment);
   }
 
@@ -282,7 +341,7 @@ contract InkProtocol is StandardToken {
     Private functions
   */
 
-  function _createTransaction(address _buyer, address _seller, uint _amount, bytes32 _metadata, address _policy, address _mediator, bool _accepted) private {
+  function _createTransaction(address _buyer, address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator) private {
     require(_buyer != address(0) && _seller != address(0));
     require(_buyer != _seller);
     require(_amount > 0);
@@ -296,7 +355,7 @@ contract InkProtocol is StandardToken {
     }
 
     // Increment the transaction.
-    uint id = globalTransactionId++;
+    uint256 id = globalTransactionId++;
 
     Transaction storage transaction = transactions[id];
 
@@ -326,13 +385,9 @@ contract InkProtocol is StandardToken {
 
     // Place the buyer's tokens in escrow (ie. this contract).
     _transferFrom(_buyer, this, _amount);
-
-    if (_accepted) {
-      _acceptTransaction(id, transaction);
-    }
   }
 
-  function _revokeTransaction(uint _id, Transaction storage _transaction) private {
+  function _revokeTransaction(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Initiated);
 
     TransactionRevoked({ id: _id });
@@ -342,7 +397,7 @@ contract InkProtocol is StandardToken {
     _cleanupTransaction(_id, _transaction, false);
   }
 
-  function _acceptTransaction(uint _id, Transaction storage _transaction) private {
+  function _acceptTransaction(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Initiated);
 
     if (_transaction.mediator != address(0)) {
@@ -357,7 +412,7 @@ contract InkProtocol is StandardToken {
     }
   }
 
-  function _confirmTransaction(uint _id, Transaction storage _transaction) private {
+  function _confirmTransaction(uint256 _id, Transaction storage _transaction) private {
     TransactionState finalState;
 
     if (_transaction.state == TransactionState.Accepted) {
@@ -374,14 +429,14 @@ contract InkProtocol is StandardToken {
     _completeTransaction(_id, _transaction, finalState, _transaction.seller);
   }
 
-  function _confirmTransactionAfterExpiry(uint _id, Transaction storage _transaction) private {
+  function _confirmTransactionAfterExpiry(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Accepted);
     require(_afterExpiry(_transaction, InkPolicy(_transaction.policy).transactionExpiry()));
 
     _completeTransaction(_id, _transaction, TransactionState.ConfirmedAfterExpiry, _transaction.seller);
   }
 
-  function _refundTransaction(uint _id, Transaction storage _transaction) private {
+  function _refundTransaction(uint256 _id, Transaction storage _transaction) private {
     TransactionState finalState;
 
     if (_transaction.state == TransactionState.Accepted) {
@@ -398,14 +453,14 @@ contract InkProtocol is StandardToken {
     _completeTransaction(_id, _transaction, finalState, _transaction.buyer);
   }
 
-  function _refundTransactionAfterExpiry(uint _id, Transaction storage _transaction) private {
+  function _refundTransactionAfterExpiry(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Disputed);
     require(_afterExpiry(_transaction, InkPolicy(_transaction.policy).escalationExpiry()));
 
     _completeTransaction(_id, _transaction, TransactionState.RefundedAfterExpiry, _transaction.buyer);
   }
 
-  function _disputeTransaction(uint _id, Transaction storage _transaction) private {
+  function _disputeTransaction(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Accepted);
     require(_afterExpiry(_transaction, InkPolicy(_transaction.policy).fulfillmentExpiry()));
 
@@ -414,7 +469,7 @@ contract InkProtocol is StandardToken {
     TransactionDisputed({ id: _id });
   }
 
-  function _escalateDisputeToMediator(uint _id, Transaction storage _transaction) private {
+  function _escalateDisputeToMediator(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Disputed);
 
     _updateTransactionState(_transaction, TransactionState.Escalated);
@@ -422,16 +477,16 @@ contract InkProtocol is StandardToken {
     TransactionEscalated({ id: _id });
   }
 
-  function _settleTransaction(uint _id, Transaction storage _transaction) private {
+  function _settleTransaction(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Escalated);
     require(_afterExpiry(_transaction, _transaction.mediationExpiry));
 
     // Divide the escrow amount in half and give it to the buyer. There's
     // a possibility that one account will get slightly more than the other.
     // We have decided to give the lesser amount to the buyer (arbitrarily).
-    uint buyerAmount = _transaction.amount.div(2);
+    uint256 buyerAmount = _transaction.amount.div(2);
     // The remaining amount is given to the seller.
-    uint sellerAmount = _transaction.amount.sub(buyerAmount);
+    uint256 sellerAmount = _transaction.amount.sub(buyerAmount);
 
     TransactionSettled({
       id: _id,
@@ -445,24 +500,24 @@ contract InkProtocol is StandardToken {
     _cleanupTransaction(_id, _transaction, true);
   }
 
-  function _refundTransactionByMediator(uint _id, Transaction storage _transaction) private {
+  function _refundTransactionByMediator(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Escalated);
 
     _completeTransaction(_id, _transaction, TransactionState.RefundedByMediator, _transaction.buyer);
   }
 
-  function _confirmTransactionByMediator(uint _id, Transaction storage _transaction) private {
+  function _confirmTransactionByMediator(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Escalated);
 
     _completeTransaction(_id, _transaction, TransactionState.ConfirmedByMediator, _transaction.seller);
   }
 
-  function _settleTransactionByMediator(uint _id, Transaction storage _transaction, uint _buyerAmount, uint _sellerAmount) private {
+  function _settleTransactionByMediator(uint256 _id, Transaction storage _transaction, uint256 _buyerAmount, uint256 _sellerAmount) private {
     require(_transaction.state == TransactionState.Escalated);
     require(_buyerAmount.add(_sellerAmount) == _transaction.amount);
 
-    uint buyerMediatorFee;
-    uint sellerMediatorFee;
+    uint256 buyerMediatorFee;
+    uint256 sellerMediatorFee;
 
     (buyerMediatorFee, sellerMediatorFee) = InkMediator(_transaction.mediator).settleTransactionByMediatorFee(_buyerAmount, _sellerAmount);
 
@@ -484,7 +539,7 @@ contract InkProtocol is StandardToken {
     _cleanupTransaction(_id, _transaction, true);
   }
 
-  function _provideTransactionFeedback(uint _id, Transaction storage _transaction, uint8 _rating, bytes32 _comment) private {
+  function _provideTransactionFeedback(uint256 _id, Transaction storage _transaction, uint8 _rating, bytes32 _comment) private {
     // The transaction must be in the completed state to allow feedback.
     require(_transaction.state == TransactionState.Completed);
 
@@ -499,8 +554,8 @@ contract InkProtocol is StandardToken {
     });
   }
 
-  function _completeTransaction(uint _id, Transaction storage _transaction, TransactionState _finalState, address _transferTo) private {
-    uint mediatorFee = _fetchMediatorFee(_transaction, _finalState);
+  function _completeTransaction(uint256 _id, Transaction storage _transaction, TransactionState _finalState, address _transferTo) private {
+    uint256 mediatorFee = _fetchMediatorFee(_transaction, _finalState);
 
     if (_finalState == TransactionState.Confirmed) {
       TransactionConfirmed({ id: _id, mediatorFee: mediatorFee });
@@ -535,7 +590,7 @@ contract InkProtocol is StandardToken {
       return 0;
     }
 
-    uint mediatorFee;
+    uint256 mediatorFee;
     InkMediator mediator = InkMediator(_transaction.mediator);
 
     if (_finalState == TransactionState.Confirmed) {
@@ -562,7 +617,7 @@ contract InkProtocol is StandardToken {
     return mediatorFee;
   }
 
-  function _resolveMediator(uint _transactionId, Transaction storage _transaction, address _mediator) private {
+  function _resolveMediator(uint256 _transactionId, Transaction storage _transaction, address _mediator) private {
     if (_mediator != address(0)) {
       bool mediatorAccepted;
 
@@ -583,27 +638,27 @@ contract InkProtocol is StandardToken {
     return now.sub(_transaction.stateTime) >= _expiry;
   }
 
-  function _findTransactionForBuyer(uint _id) private view returns (Transaction storage transaction) {
+  function _findTransactionForBuyer(uint256 _id) private view returns (Transaction storage transaction) {
     transaction = _findTransaction(_id);
-    require(authorizedBy(transaction.buyer));
+    require(msg.sender == transaction.buyer);
   }
 
-  function _findTransactionForSeller(uint _id) private view returns (Transaction storage transaction) {
+  function _findTransactionForSeller(uint256 _id) private view returns (Transaction storage transaction) {
     transaction = _findTransaction(_id);
-    require(authorizedBy(transaction.seller));
+    require(msg.sender == transaction.seller);
   }
 
-  function _findTransactionForParty(uint _id) private view returns (Transaction storage transaction) {
+  function _findTransactionForParty(uint256 _id) private view returns (Transaction storage transaction) {
     transaction = _findTransaction(_id);
-    require(authorizedBy(transaction.buyer) || authorizedBy(transaction.seller));
+    require(msg.sender == transaction.buyer || msg.sender == transaction.seller);
   }
 
-  function _findTransactionForMediator(uint _id) private view returns (Transaction storage transaction) {
+  function _findTransactionForMediator(uint256 _id) private view returns (Transaction storage transaction) {
     transaction = _findTransaction(_id);
-    require(transaction.mediator == msg.sender);
+    require(msg.sender == transaction.mediator);
   }
 
-  function _findTransactionForFeedback(uint _id) private view returns (Transaction storage transaction) {
+  function _findTransactionForFeedback(uint256 _id) private view returns (Transaction storage transaction) {
     transaction = _findTransaction(_id);
 
     // If the creator is not set, then the creator is the buyer.
@@ -613,18 +668,18 @@ contract InkProtocol is StandardToken {
       require(msg.sender == transaction.buyer);
     } else {
       // The transaction was created by an agent so the agent must be the one
-      // making the update AND the agent must be authorized by the buyer.
-      require(msg.sender == transaction.creator && authorizedBy(transaction.buyer));
+      // making the update.
+      require(msg.sender == transaction.creator);
     }
   }
 
-  function _findTransaction(uint _id) private view returns (Transaction storage transaction) {
+  function _findTransaction(uint256 _id) private view returns (Transaction storage transaction) {
     transaction = transactions[_id];
 
     require(transaction.state != TransactionState.Null);
   }
 
-  function _transferFrom(address _from, address _to, uint _value) private returns (bool) {
+  function _transferFrom(address _from, address _to, uint256 _value) private returns (bool) {
     require(_to != address(0));
     require(_value <= balances[_from]);
 
@@ -635,7 +690,7 @@ contract InkProtocol is StandardToken {
     return true;
   }
 
-  function _transferFromTransaction(address _to, uint _value) private returns (bool) {
+  function _transferFromTransaction(address _to, uint256 _value) private returns (bool) {
     if (_value > 0) {
       return _transferFrom(this, _to, _value);
     }
@@ -648,7 +703,7 @@ contract InkProtocol is StandardToken {
     _transaction.stateTime = now;
   }
 
-  function _cleanupTransaction(uint _id, Transaction storage _transaction, bool _completed) private {
+  function _cleanupTransaction(uint256 _id, Transaction storage _transaction, bool _completed) private {
     // Remove data that is no longer needed on the contract.
 
     if (_completed) {
@@ -662,15 +717,5 @@ contract InkProtocol is StandardToken {
     } else {
       delete transactions[_id];
     }
-  }
-
-  function _link(address _from, address _to) private {
-    require(_from != address(0) && _to != address(0));
-    require(_from != _to);
-
-    AccountLinked({
-      from: _from,
-      to: _to
-    });
   }
 }
