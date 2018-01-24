@@ -248,8 +248,9 @@ contract InkProtocol is StandardToken {
   // Returns true if the msg.sender is authorized to act on behalf of _account.
   function authorizedBy(address _account) public view returns (bool) {
     require(_account != address(0));
+    require(_account != msg.sender);
 
-    return msg.sender == _account || agentAuthorizations[_account][msg.sender];
+    return agentAuthorizations[_account][msg.sender];
   }
 
 
@@ -281,6 +282,7 @@ contract InkProtocol is StandardToken {
 
   function createTransactionForBuyer(address _buyer, address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator) external {
     require(authorizedBy(_buyer));
+
     _createTransaction(_buyer, _seller, _amount, _metadata, _policy, _mediator);
   }
 
@@ -360,10 +362,13 @@ contract InkProtocol is StandardToken {
     Transaction storage transaction = transactions[id];
 
     // Create the transaction.
+    transaction.creator = msg.sender;
+
+    // If the buyer is the creator, we don't need to store the buyer to save
+    // some gas.
     if (msg.sender != _buyer) {
-      transaction.creator = msg.sender;
+      transaction.buyer = _buyer;
     }
-    transaction.buyer = _buyer;
     transaction.seller = _seller;
     transaction.state = TransactionState.Initiated;
     transaction.amount = _amount;
@@ -375,11 +380,11 @@ contract InkProtocol is StandardToken {
     TransactionInitiated({
       id: id,
       creator: msg.sender,
-      buyer: transaction.buyer,
-      seller: transaction.seller,
+      buyer: _buyer,
+      seller: _seller,
       policy: _policy,
       mediator: _mediator,
-      amount: transaction.amount,
+      amount: _amount,
       metadata: _metadata
     });
 
@@ -392,7 +397,7 @@ contract InkProtocol is StandardToken {
 
     TransactionRevoked({ id: _id });
 
-    _transferFromTransaction(_transaction.buyer, _transaction.amount);
+    _transferFromTransaction(_buyerFor(_transaction), _transaction.amount);
 
     _cleanupTransaction(_id, _transaction, false);
   }
@@ -450,14 +455,14 @@ contract InkProtocol is StandardToken {
       revert();
     }
 
-    _completeTransaction(_id, _transaction, finalState, _transaction.buyer);
+    _completeTransaction(_id, _transaction, finalState, _buyerFor(_transaction));
   }
 
   function _refundTransactionAfterExpiry(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Disputed);
     require(_afterExpiry(_transaction, InkPolicy(_transaction.policy).escalationExpiry()));
 
-    _completeTransaction(_id, _transaction, TransactionState.RefundedAfterExpiry, _transaction.buyer);
+    _completeTransaction(_id, _transaction, TransactionState.RefundedAfterExpiry, _buyerFor(_transaction));
   }
 
   function _disputeTransaction(uint256 _id, Transaction storage _transaction) private {
@@ -494,7 +499,7 @@ contract InkProtocol is StandardToken {
       sellerAmount: sellerAmount
     });
 
-    _transferFromTransaction(_transaction.buyer, buyerAmount);
+    _transferFromTransaction(_buyerFor(_transaction), buyerAmount);
     _transferFromTransaction(_transaction.seller, sellerAmount);
 
     _cleanupTransaction(_id, _transaction, true);
@@ -503,7 +508,7 @@ contract InkProtocol is StandardToken {
   function _refundTransactionByMediator(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Escalated);
 
-    _completeTransaction(_id, _transaction, TransactionState.RefundedByMediator, _transaction.buyer);
+    _completeTransaction(_id, _transaction, TransactionState.RefundedByMediator, _buyerFor(_transaction));
   }
 
   function _confirmTransactionByMediator(uint256 _id, Transaction storage _transaction) private {
@@ -532,7 +537,7 @@ contract InkProtocol is StandardToken {
       sellerMediatorFee: sellerMediatorFee
     });
 
-    _transferFromTransaction(_transaction.buyer, _buyerAmount.sub(buyerMediatorFee));
+    _transferFromTransaction(_buyerFor(_transaction), _buyerAmount.sub(buyerMediatorFee));
     _transferFromTransaction(_transaction.seller, _sellerAmount.sub(sellerMediatorFee));
     _transferFromTransaction(_transaction.mediator, buyerMediatorFee.add(sellerMediatorFee));
 
@@ -640,7 +645,7 @@ contract InkProtocol is StandardToken {
 
   function _findTransactionForBuyer(uint256 _id) private view returns (Transaction storage transaction) {
     transaction = _findTransaction(_id);
-    require(msg.sender == transaction.buyer);
+    require(msg.sender == _buyerFor(transaction));
   }
 
   function _findTransactionForSeller(uint256 _id) private view returns (Transaction storage transaction) {
@@ -650,7 +655,7 @@ contract InkProtocol is StandardToken {
 
   function _findTransactionForParty(uint256 _id) private view returns (Transaction storage transaction) {
     transaction = _findTransaction(_id);
-    require(msg.sender == transaction.buyer || msg.sender == transaction.seller);
+    require(msg.sender == _buyerFor(transaction) || msg.sender == transaction.seller);
   }
 
   function _findTransactionForMediator(uint256 _id) private view returns (Transaction storage transaction) {
@@ -660,17 +665,7 @@ contract InkProtocol is StandardToken {
 
   function _findTransactionForFeedback(uint256 _id) private view returns (Transaction storage transaction) {
     transaction = _findTransaction(_id);
-
-    // If the creator is not set, then the creator is the buyer.
-    if (transaction.creator == address(0)) {
-      // The transaction was created by the buyer so the buyer is allowed
-      // to update their feedback comment at anytime.
-      require(msg.sender == transaction.buyer);
-    } else {
-      // The transaction was created by an agent so the agent must be the one
-      // making the update.
-      require(msg.sender == transaction.creator);
-    }
+    require(msg.sender == transaction.creator);
   }
 
   function _findTransaction(uint256 _id) private view returns (Transaction storage transaction) {
@@ -698,6 +693,13 @@ contract InkProtocol is StandardToken {
     return true;
   }
 
+  function _buyerFor(Transaction storage _transaction) private returns (address) {
+    if (_transaction.buyer != address(0)) {
+      return _transaction.buyer;
+    }
+    return _transaction.creator;
+  }
+
   function _updateTransactionState(Transaction storage _transaction, TransactionState _state) private {
     _transaction.state = _state;
     _transaction.stateTime = now;
@@ -709,6 +711,7 @@ contract InkProtocol is StandardToken {
     if (_completed) {
       _transaction.state = TransactionState.Completed;
 
+      delete _transaction.buyer;
       delete _transaction.seller;
       delete _transaction.policy;
       delete _transaction.mediator;
