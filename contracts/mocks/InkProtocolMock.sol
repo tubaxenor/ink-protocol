@@ -4,7 +4,7 @@ import '../InkProtocol.sol';
 
 contract InkProtocolMock is InkProtocol {
   function InkProtocolMock() public {
-    balances[msg.sender] = totalSupply;
+    balances[msg.sender] = totalSupply_;
   }
 
   function _updateTransactionState(uint _id, TransactionState _state) external {

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.11;
 
-import 'zeppelin-solidity/contracts/token/StandardToken.sol';
+import 'zeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
 import './InkMediator.sol';
 import './InkPolicy.sol';
 
@@ -9,9 +9,6 @@ contract InkProtocol is StandardToken {
   string public constant name = "Ink Protocol";
   string public constant symbol = "XNK";
   uint8 public constant decimals = 18;
-
-  // A total supply of 500,000,000 Ink Tokens (XNK).
-  uint256 public constant totalSupply = 500000000000000000000000000;
 
   enum TransactionState {
     // This is an internal state to represent an uninitialized transaction.
@@ -220,6 +217,9 @@ contract InkProtocol is StandardToken {
   */
 
   function InkProtocol() public {
+    // A total supply of 500,000,000 Ink Tokens (XNK).
+    totalSupply_ = 500000000000000000000000000;
+
     // TODO: Add distribution logic here.
   }
 
