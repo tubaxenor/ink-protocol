@@ -257,6 +257,7 @@ contract InkProtocol is StandardToken {
   // Called by a user who wishes to link with another _account.
   function link(address _to) external {
     require(_to != address(0));
+    require(_to != msg.sender);
 
     AccountLinked({
       from: msg.sender,
