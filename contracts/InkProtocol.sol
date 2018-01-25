@@ -238,13 +238,6 @@ contract InkProtocol is StandardToken {
     agentAuthorizations[msg.sender][_agent] = true;
   }
 
-  function deauthorize(address _agent) external {
-    require(_agent != address(0));
-    require(msg.sender != _agent);
-
-    delete agentAuthorizations[msg.sender][_agent];
-  }
-
   // Returns true if the msg.sender is authorized to act on behalf of _account.
   function authorizedBy(address _account) public view returns (bool) {
     require(_account != address(0));

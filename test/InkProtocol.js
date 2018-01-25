@@ -3,7 +3,6 @@
 let files = [
   "./InkProtocol/gasAnalysis",
   "./InkProtocol/authorize",
-  "./InkProtocol/deauthorize",
   "./InkProtocol/authorizedBy",
   "./InkProtocol/createTransaction",
   "./InkProtocol/createTransactionForBuyer",
