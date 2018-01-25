@@ -5,8 +5,6 @@ let files = [
   "./InkProtocol/authorize",
   "./InkProtocol/authorizedBy",
   "./InkProtocol/createTransaction",
-  "./InkProtocol/createTransactionForBuyer",
-  "./InkProtocol/createTransactionForBuyerAndSeller",
   "./InkProtocol/revokeTransaction",
   "./InkProtocol/acceptTransaction",
   "./InkProtocol/confirmTransaction",

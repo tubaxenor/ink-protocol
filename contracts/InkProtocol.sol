@@ -270,12 +270,10 @@ contract InkProtocol is StandardToken {
     Transaction functions
   */
 
-  function createTransaction(address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator) external {
-    _createTransaction(msg.sender, _seller, _amount, _metadata, _policy, _mediator);
-  }
-
-  function createTransactionForBuyer(address _buyer, address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator) external {
-    require(authorizedBy(_buyer));
+  function createTransaction(address _buyer, address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator) external {
+    if (msg.sender != _buyer) {
+      require(authorizedBy(_buyer));
+    }
 
     _createTransaction(_buyer, _seller, _amount, _metadata, _policy, _mediator);
   }
@@ -687,7 +685,7 @@ contract InkProtocol is StandardToken {
     return true;
   }
 
-  function _buyerFor(Transaction storage _transaction) private returns (address) {
+  function _buyerFor(Transaction storage _transaction) view private returns (address) {
     if (_transaction.buyer != address(0)) {
       return _transaction.buyer;
     }

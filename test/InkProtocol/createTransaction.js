@@ -28,7 +28,7 @@ module.exports = (accounts) => {
         assert.equal(eventArgs.to, sender)
         assert.equal(eventArgs.value, amount)
 
-        let tx = (withMedAndPol) ? await token.createTransaction(seller, amount, metadata, policy.address, mediator.address, { from: sender }) : await token.createTransaction(seller, amount, metadata, 0, 0, { from: sender })
+        let tx = (withMedAndPol) ? await token.createTransaction(accounts[0], seller, amount, metadata, policy.address, mediator.address, { from: sender }) : await token.createTransaction(accounts[0], seller, amount, metadata, 0, 0, { from: sender })
         eventArgs = $ink.eventFromTx(tx, $ink.events.TransactionInitiated).args
 
         assert.equal(eventArgs.id.toNumber(), 0)
