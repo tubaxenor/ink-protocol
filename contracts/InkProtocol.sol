@@ -347,7 +347,7 @@ contract InkProtocol is StandardToken {
   }
 
   function provideTransactionFeedback(uint256 _id, uint8 _rating, bytes32 _comment) external {
-    _provideTransactionFeedback(_id, _findTransactionForFeedback(_id), _rating, _comment);
+    _provideTransactionFeedback(_id, _findTransactionForBuyer(_id), _rating, _comment);
   }
 
 
@@ -709,11 +709,6 @@ contract InkProtocol is StandardToken {
   function _findTransactionForMediator(uint256 _id) private view returns (Transaction storage transaction) {
     transaction = _findTransaction(_id);
     require(msg.sender == transaction.mediator);
-  }
-
-  function _findTransactionForFeedback(uint256 _id) private view returns (Transaction storage transaction) {
-    transaction = _findTransaction(_id);
-    require(msg.sender == transaction.creator);
   }
 
   function _findTransaction(uint256 _id) private view returns (Transaction storage transaction) {
