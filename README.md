@@ -4,7 +4,7 @@
 
 :bookmark_tabs: [Read the Whitepaper](https://paywithink.com/wp-content/uploads/2018/01/Ink_Protocol_Whitepaper_V6_Listia_Inc.pdf)
 
-Ink Protocol is implemented on Ethereum as a Smart Contract and includes an ERC20 compatible utility token, called `XNK`, which is used for payments. `XNK` is a general purpose cryptocurrency that is:
+Ink Protocol is implemented on Ethereum as a Smart Contract and includes an ERC20-compatible utility token, called `XNK`, which is used for payments. `XNK` is a general purpose cryptocurrency that is:
 
 - Fixed supply (500,000,000 `XNK`)
 - Fractionally divisible

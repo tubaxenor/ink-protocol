@@ -1,12 +1,35 @@
 {
-  "version": "1.0",
-  "license": "UNLICENSED",
-  "dependencies": {
+  "name": "ink-protocol",
+  "version": "1.0.0-beta.1",
+  "description": "Decentralized reputation and payments for peer-to-peer marketplaces",
+  "license": "MIT",
+  "author": "Ink Protocol <admin@paywithink.com>",
+  "bugs": {
+    "url": "https://github.com/InkProtocol/ink-protocol/issues"
+  },
+  "homepage": "https://github.com/InkProtocol/ink-protocol",
+  "keywords": [
+    "solidity",
+    "ethereum",
+    "smart",
+    "contracts",
+    "protocol",
+    "xnk",
+    "ink"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/InkProtocol/ink-protocol"
+  },
+  "devDependencies": {
     "comma-number": "^2.0.0",
     "ethereumjs-util": "^5.1.2",
     "ganache-cli": "^6.0.3",
     "truffle": "^4.0.4",
     "truffle-flattener": "^1.2.0",
     "zeppelin-solidity": "^1.5.0"
+  },
+  "dependencies": {
+    "npm": "^5.6.0"
   }
 }
