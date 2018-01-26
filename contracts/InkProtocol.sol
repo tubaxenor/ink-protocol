@@ -2,6 +2,7 @@ pragma solidity ^0.4.11;
 
 import 'zeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
 import './InkMediator.sol';
+import './InkOwner.sol';
 
 /// @title Ink Protocol: Decentralized reputation and payments for peer-to-peer marketplaces.
 contract InkProtocol is StandardToken {
@@ -45,23 +46,13 @@ contract InkProtocol is StandardToken {
   // The running ID counter for all Ink Transactions.
   uint256 private globalTransactionId = 0;
 
-  /**
-    Mapping of all agent authorizations.
-    {
-      user(address) => {
-        agent(address) => authorized(bool)
-      }
-    }
-  */
-  mapping(address => mapping(address => bool)) private agentAuthorizations;
-
   // Mapping of all transactions by ID (globalTransactionId).
   mapping(uint256 => Transaction) internal transactions;
 
   // The struct definition for an Ink Transaction.
   struct Transaction {
-    // The creator of the transaction (this is always msg.sender).
-    address creator;
+    // The owner of the transaction.
+    address owner;
     // The address of the buyer on the transaction.
     address buyer;
     // The address of the seller on the transaction.
@@ -83,14 +74,14 @@ contract InkProtocol is StandardToken {
   // Event emitted when a transaction is initiated.
   event TransactionInitiated(
     uint256 indexed id,
-    address creator,
+    address owner,
     address indexed buyer,
     address indexed seller,
     address policy,
     address mediator,
     uint256 amount,
     // A hash string representing the metadata for the transaction. This is
-    // somewhat arbitrary for the transaction. Only the transaction creator
+    // somewhat arbitrary for the transaction. Only the transaction owner
     // will really know the original contents of the metadata and may choose
     // to share it at their discretion.
     bytes32 metadata
@@ -200,7 +191,7 @@ contract InkProtocol is StandardToken {
     uint256 sellerAmount
   );
 
-  // Event emitted when a transaction's feedback is updated by the creator.
+  // Event emitted when a transaction's feedback is updated by the buyer.
   event FeedbackUpdated(
     uint256 indexed transactionId,
     uint8 rating,
@@ -244,28 +235,6 @@ contract InkProtocol is StandardToken {
    return super.transferFrom(_from, _to, _value);
   }
 
-  /*
-    Agent authorization functions
-
-    These functions are used by user accounts to authorize and deauthorize
-    agents to act on their behalf.
-  */
-
-  function authorize(address _agent) external {
-    require(_agent != address(0));
-    require(msg.sender != _agent);
-
-    agentAuthorizations[msg.sender][_agent] = true;
-  }
-
-  // Returns true if the msg.sender is authorized to act on behalf of _account.
-  function authorizedBy(address _account) public view returns (bool) {
-    require(_account != address(0));
-    require(_account != msg.sender);
-
-    return agentAuthorizations[_account][msg.sender];
-  }
-
 
   /*
     Account linking functions
@@ -290,12 +259,12 @@ contract InkProtocol is StandardToken {
     Transaction functions
   */
 
-  function createTransaction(address _buyer, address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator) external {
-    if (msg.sender != _buyer) {
-      require(authorizedBy(_buyer));
-    }
+  function createTransaction(address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator) external {
+    _createTransaction(_seller, _amount, _metadata, _policy, _mediator, address(0));
+  }
 
-    _createTransaction(_buyer, _seller, _amount, _metadata, _policy, _mediator);
+  function createTransactionWithOwner(address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator, address _owner) external {
+    _createTransaction(_seller, _amount, _metadata, _policy, _mediator, _owner);
   }
 
   function revokeTransaction(uint256 _id) external {
@@ -355,9 +324,9 @@ contract InkProtocol is StandardToken {
     Private functions
   */
 
-  function _createTransaction(address _buyer, address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator) private {
-    require(_buyer != address(0) && _seller != address(0));
-    require(_buyer != _seller);
+  function _createTransaction(address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator, address _owner) private {
+    require(_seller != address(0));
+    require(_seller != msg.sender);
     require(_amount > 0);
 
     // Per specifications, if a mediator is involved then a policy is required.
@@ -371,28 +340,22 @@ contract InkProtocol is StandardToken {
     // Increment the transaction.
     uint256 id = globalTransactionId++;
 
-    Transaction storage transaction = transactions[id];
-
     // Create the transaction.
-    transaction.creator = msg.sender;
-
-    // If the buyer is the creator, we don't need to store the buyer to save
-    // some gas.
-    if (msg.sender != _buyer) {
-      transaction.buyer = _buyer;
-    }
+    Transaction storage transaction = transactions[id];
+    transaction.buyer = msg.sender;
     transaction.seller = _seller;
     transaction.state = TransactionState.Initiated;
     transaction.amount = _amount;
     transaction.policy = _policy;
 
     _resolveMediator(id, transaction, _mediator);
+    _resolveOwner(id, transaction, _owner);
 
     // Emit the event.
     TransactionInitiated({
       id: id,
-      creator: msg.sender,
-      buyer: _buyer,
+      owner: _owner,
+      buyer: msg.sender,
       seller: _seller,
       policy: _policy,
       mediator: _mediator,
@@ -401,7 +364,7 @@ contract InkProtocol is StandardToken {
     });
 
     // Place the buyer's tokens in escrow (ie. this contract).
-    _transferFrom(_buyer, this, _amount);
+    _transferFrom(msg.sender, this, _amount);
   }
 
   function _revokeTransaction(uint256 _id, Transaction storage _transaction) private {
@@ -409,7 +372,7 @@ contract InkProtocol is StandardToken {
 
     TransactionRevoked({ id: _id });
 
-    _transferFromEscrow(_buyerFor(_transaction), _transaction.amount);
+    _transferFromEscrow(_transaction.buyer, _transaction.amount);
 
     _cleanupTransaction(_id, _transaction, false);
   }
@@ -467,14 +430,14 @@ contract InkProtocol is StandardToken {
       revert();
     }
 
-    _completeTransaction(_id, _transaction, finalState, _buyerFor(_transaction));
+    _completeTransaction(_id, _transaction, finalState, _transaction.buyer);
   }
 
   function _refundTransactionAfterExpiry(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Disputed);
     require(_afterExpiry(_transaction, _fetchExpiry(_transaction, Expiry.Escalation)));
 
-    _completeTransaction(_id, _transaction, TransactionState.RefundedAfterExpiry, _buyerFor(_transaction));
+    _completeTransaction(_id, _transaction, TransactionState.RefundedAfterExpiry, _transaction.buyer);
   }
 
   function _disputeTransaction(uint256 _id, Transaction storage _transaction) private {
@@ -511,7 +474,7 @@ contract InkProtocol is StandardToken {
       sellerAmount: sellerAmount
     });
 
-    _transferFromEscrow(_buyerFor(_transaction), buyerAmount);
+    _transferFromEscrow(_transaction.buyer, buyerAmount);
     _transferFromEscrow(_transaction.seller, sellerAmount);
 
     _cleanupTransaction(_id, _transaction, true);
@@ -520,7 +483,7 @@ contract InkProtocol is StandardToken {
   function _refundTransactionByMediator(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Escalated);
 
-    _completeTransaction(_id, _transaction, TransactionState.RefundedByMediator, _buyerFor(_transaction));
+    _completeTransaction(_id, _transaction, TransactionState.RefundedByMediator, _transaction.buyer);
   }
 
   function _confirmTransactionByMediator(uint256 _id, Transaction storage _transaction) private {
@@ -549,7 +512,7 @@ contract InkProtocol is StandardToken {
       sellerMediatorFee: sellerMediatorFee
     });
 
-    _transferFromEscrow(_buyerFor(_transaction), _buyerAmount.sub(buyerMediatorFee));
+    _transferFromEscrow(_transaction.buyer, _buyerAmount.sub(buyerMediatorFee));
     _transferFromEscrow(_transaction.seller, _sellerAmount.sub(sellerMediatorFee));
     _transferFromEscrow(_transaction.mediator, buyerMediatorFee.add(sellerMediatorFee));
 
@@ -677,10 +640,25 @@ contract InkProtocol is StandardToken {
     return mediatorFee;
   }
 
+  function _resolveOwner(uint256 _transactionId, Transaction storage _transaction, address _owner) private {
+    if (_owner != address(0)) {
+      // If an owner is specified, it must authorize the transaction.
+      require(InkOwner(_owner).authorizeTransaction(
+        _transactionId,
+        _transaction.buyer,
+        _transaction.seller,
+        _transaction.policy,
+        _transaction.mediator
+      ));
+
+      _transaction.owner = _owner;
+    }
+  }
+
   function _resolveMediator(uint256 _transactionId, Transaction storage _transaction, address _mediator) private {
     if (_mediator != address(0)) {
       // The mediator must accept the transaction otherwise we abort.
-      require(InkMediator(_mediator).requestMediator(_transactionId, _transaction.creator, _transaction.amount));
+      require(InkMediator(_mediator).requestMediator(_transactionId, _transaction.owner, _transaction.amount));
 
       // Assign the mediator to the transaction.
       _transaction.mediator = _mediator;
@@ -693,7 +671,7 @@ contract InkProtocol is StandardToken {
 
   function _findTransactionForBuyer(uint256 _id) private view returns (Transaction storage transaction) {
     transaction = _findTransaction(_id);
-    require(msg.sender == _buyerFor(transaction));
+    require(msg.sender == transaction.buyer);
   }
 
   function _findTransactionForSeller(uint256 _id) private view returns (Transaction storage transaction) {
@@ -703,7 +681,7 @@ contract InkProtocol is StandardToken {
 
   function _findTransactionForParty(uint256 _id) private view returns (Transaction storage transaction) {
     transaction = _findTransaction(_id);
-    require(msg.sender == _buyerFor(transaction) || msg.sender == transaction.seller);
+    require(msg.sender == transaction.buyer || msg.sender == transaction.seller);
   }
 
   function _findTransactionForMediator(uint256 _id) private view returns (Transaction storage transaction) {
@@ -734,13 +712,6 @@ contract InkProtocol is StandardToken {
     }
 
     return true;
-  }
-
-  function _buyerFor(Transaction storage _transaction) view private returns (address) {
-    if (_transaction.buyer != address(0)) {
-      return _transaction.buyer;
-    }
-    return _transaction.creator;
   }
 
   function _updateTransactionState(Transaction storage _transaction, TransactionState _state) private {
