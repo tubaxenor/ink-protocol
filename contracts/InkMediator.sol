@@ -1,6 +1,6 @@
 pragma solidity ^0.4.11;
 
-interface InkMediator {
+contract InkMediator {
   function mediationExpiry() external returns (uint32);
   function requestMediator(uint _transactionId, uint _transactionAmount, address _transactionOwner) external returns (bool);
   function confirmTransactionFee(uint _transactionAmount) external returns (uint);

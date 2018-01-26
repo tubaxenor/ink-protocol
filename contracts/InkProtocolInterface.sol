@@ -1,6 +1,6 @@
 pragma solidity ^0.4.11;
 
-interface InkProtocolInterface {
+contract InkProtocolInterface {
   /* Protocol */
   function link(address _to) external;
   function createTransaction(address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator) external;
@@ -20,9 +20,12 @@ interface InkProtocolInterface {
   function provideTransactionFeedback(uint256 _id, uint8 _rating, bytes32 _comment) external;
 
   /* ERC20 */
-  function approve(address _spender, uint256 _value) returns (bool success);
-  function allowance(address _owner, address _spender) constant returns (uint256 remaining);
-  function balanceOf(address _owner) constant returns (uint256 balance);
-  function transferFrom(address _from, address _to, uint256 _value) returns (bool success);
-  function transfer(address _to, uint256 _value) returns (bool success);
+  function totalSupply() public view returns (uint256);
+  function balanceOf(address who) public view returns (uint256);
+  function transfer(address to, uint256 value) public returns (bool);
+  function transferFrom(address from, address to, uint256 value) public returns (bool);
+  function approve(address spender, uint256 value) public returns (bool);
+  function allowance(address owner, address spender) public view returns (uint256);
+  function increaseApproval(address spender, uint addedValue) public returns (bool);
+  function decreaseApproval(address spender, uint subtractedValue) public returns (bool);
 }

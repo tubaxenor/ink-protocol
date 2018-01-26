@@ -8,7 +8,7 @@ contract MediatorMock is InkMediator {
     return 10 days;
   }
 
-  function requestMediator(uint _transactionId, address _transactionOwner, uint _transactionAmount) external returns (bool) {
+  function requestMediator(uint _transactionId, address _transactionOwner, uint _transactionAmount) external pure returns (bool) {
     _transactionId;
     _transactionOwner;
     _transactionAmount;
