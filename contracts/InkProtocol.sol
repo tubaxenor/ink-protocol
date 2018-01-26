@@ -37,10 +37,7 @@ contract InkProtocol is StandardToken {
     RefundedAfterExpiry,      // 14
     ConfirmedAfterEscalation, // 15
     RefundedAfterEscalation,  // 16
-    Settled,                  // 17
-
-    // This is an internal state to represent a completed transaction.
-    Completed                 // 18
+    Settled                   // 17
   }
 
   // The running ID counter for all Ink Transactions.
@@ -51,8 +48,6 @@ contract InkProtocol is StandardToken {
 
   // The struct definition for an Ink Transaction.
   struct Transaction {
-    // The owner of the transaction.
-    address owner;
     // The address of the buyer on the transaction.
     address buyer;
     // The address of the seller on the transaction.
@@ -327,8 +322,8 @@ contract InkProtocol is StandardToken {
   */
 
   function _createTransaction(address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator, address _owner) private {
-    require(_seller != address(0));
-    require(_seller != msg.sender);
+    require(_seller != address(0) && _seller != msg.sender);
+    require(_owner != msg.sender && _owner != _seller);
     require(_amount > 0);
 
     // Per specifications, if a mediator is involved then a policy is required.
@@ -350,8 +345,8 @@ contract InkProtocol is StandardToken {
     transaction.amount = _amount;
     transaction.policy = _policy;
 
-    _resolveMediator(id, transaction, _mediator);
-    _resolveOwner(id, transaction, _owner);
+    _resolveMediator(id, transaction, _mediator, _owner);
+    _resolveOwner(id, _owner);
 
     // Emit the event.
     TransactionInitiated({
@@ -522,8 +517,9 @@ contract InkProtocol is StandardToken {
   }
 
   function _provideTransactionFeedback(uint256 _id, Transaction storage _transaction, uint8 _rating, bytes32 _comment) private {
-    // The transaction must be in the completed state to allow feedback.
-    require(_transaction.state == TransactionState.Completed);
+    // The transaction must be completed (Null state with a buyer) to allow
+    // feedback.
+    require(_transaction.state == TransactionState.Null);
 
     // As per functional specifications, ratings must be an integer between
     // 1 and 5, inclusive.
@@ -601,7 +597,7 @@ contract InkProtocol is StandardToken {
       return 0;
     }
 
-    uint mediatorFee;
+    uint256 mediatorFee;
     bool success;
 
     if (_finalState == TransactionState.Confirmed) {
@@ -611,7 +607,9 @@ contract InkProtocol is StandardToken {
     } else if (_finalState == TransactionState.ConfirmedAfterDispute) {
       success = _transaction.mediator.call(bytes4(keccak256("confirmTransactionAfterDisputeFee(uint256)")), _transaction.amount);
     } else if (_finalState == TransactionState.ConfirmedByMediator) {
-      success = _transaction.mediator.call(bytes4(keccak256("confirmTransactionByMediatorFee(uint256)")), _transaction.amount);
+      mediatorFee = InkMediator(_transaction.mediator).confirmTransactionByMediatorFee(_transaction.amount);
+      require(mediatorFee <= _transaction.amount);
+      return mediatorFee;
     } else if (_finalState == TransactionState.Refunded) {
       success = _transaction.mediator.call(bytes4(keccak256("refundTransactionFee(uint256)")), _transaction.amount);
     } else if (_finalState == TransactionState.RefundedAfterExpiry) {
@@ -619,7 +617,9 @@ contract InkProtocol is StandardToken {
     } else if (_finalState == TransactionState.RefundedAfterDispute) {
       success = _transaction.mediator.call(bytes4(keccak256("refundTransactionAfterDisputeFee(uint256)")), _transaction.amount);
     } else if (_finalState == TransactionState.RefundedByMediator) {
-      success = _transaction.mediator.call(bytes4(keccak256("refundTransactionByMediatorFee(uint256)")), _transaction.amount);
+      mediatorFee = InkMediator(_transaction.mediator).refundTransactionByMediatorFee(_transaction.amount);
+      require(mediatorFee <= _transaction.amount);
+      return mediatorFee;
     }
 
     if (success) {
@@ -642,25 +642,20 @@ contract InkProtocol is StandardToken {
     return mediatorFee;
   }
 
-  function _resolveOwner(uint256 _transactionId, Transaction storage _transaction, address _owner) private {
+  function _resolveOwner(uint256 _transactionId, address _owner) private {
     if (_owner != address(0)) {
       // If an owner is specified, it must authorize the transaction.
       require(InkOwner(_owner).authorizeTransaction(
         _transactionId,
-        _transaction.buyer,
-        _transaction.seller,
-        _transaction.policy,
-        _transaction.mediator
+        msg.sender
       ));
-
-      _transaction.owner = _owner;
     }
   }
 
-  function _resolveMediator(uint256 _transactionId, Transaction storage _transaction, address _mediator) private {
+  function _resolveMediator(uint256 _transactionId, Transaction storage _transaction, address _mediator, address _owner) private {
     if (_mediator != address(0)) {
       // The mediator must accept the transaction otherwise we abort.
-      require(InkMediator(_mediator).requestMediator(_transactionId, _transaction.owner, _transaction.amount));
+      require(InkMediator(_mediator).requestMediator(_transactionId, _transaction.amount, _owner));
 
       // Assign the mediator to the transaction.
       _transaction.mediator = _mediator;
@@ -693,8 +688,7 @@ contract InkProtocol is StandardToken {
 
   function _findTransaction(uint256 _id) private view returns (Transaction storage transaction) {
     transaction = transactions[_id];
-
-    require(transaction.state != TransactionState.Null);
+    require(_id < globalTransactionId);
   }
 
   function _transferFrom(address _from, address _to, uint256 _value) private returns (bool) {
@@ -725,9 +719,7 @@ contract InkProtocol is StandardToken {
     // Remove data that is no longer needed on the contract.
 
     if (_completed) {
-      _transaction.state = TransactionState.Completed;
-
-      delete _transaction.buyer;
+      delete _transaction.state;
       delete _transaction.seller;
       delete _transaction.policy;
       delete _transaction.mediator;

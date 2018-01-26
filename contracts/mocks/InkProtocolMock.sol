@@ -11,11 +11,10 @@ contract InkProtocolMock is InkProtocol {
     transactions[_id].state = _state;
   }
 
-  function _fetchTransaction(uint _id) external constant returns (address, address, address, address, TransactionState, uint) {
+  function _fetchTransaction(uint _id) external constant returns (address, address, address, TransactionState, uint) {
     var transaction = transactions[_id];
 
-    return (transaction.owner,
-            transaction.buyer,
+    return (transaction.buyer,
             transaction.seller,
             transaction.mediator,
             transaction.state,
