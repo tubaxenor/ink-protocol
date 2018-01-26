@@ -2,13 +2,19 @@ pragma solidity ^0.4.11;
 
 import 'zeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
 import './InkMediator.sol';
-import './InkPolicy.sol';
 
 /// @title Ink Protocol: Decentralized reputation and payments for peer-to-peer marketplaces.
 contract InkProtocol is StandardToken {
   string public constant name = "Ink Protocol";
   string public constant symbol = "XNK";
   uint8 public constant decimals = 18;
+
+  enum Expiry {
+    Transaction, // 0
+    Fulfillment, // 1
+    Escalation,  // 2
+    Mediation    // 3
+  }
 
   enum TransactionState {
     // This is an internal state to represent an uninitialized transaction.
@@ -64,9 +70,6 @@ contract InkProtocol is StandardToken {
     address policy;
     // The address of the mediator contract for the transaction.
     address mediator;
-    // The time (seconds) for the mediation expiry. This value is retrieved
-    // from the mediator contract at creation of the transaction.
-    uint32 mediationExpiry;
     // The state of the transaction.
     TransactionState state;
     // The (block) time that the transaction transitioned to its current state.
@@ -224,7 +227,7 @@ contract InkProtocol is StandardToken {
   }
 
   /*
-    ERC20 functions
+    ERC20 override functions
   */
 
   function transfer(address _to, uint256 _value) public returns (bool) {
@@ -434,7 +437,7 @@ contract InkProtocol is StandardToken {
     } else if (_transaction.state == TransactionState.Disputed) {
       finalState = TransactionState.ConfirmedAfterDispute;
     } else if (_transaction.state == TransactionState.Escalated) {
-      require(_afterExpiry(_transaction, _transaction.mediationExpiry));
+      require(_afterExpiry(_transaction, _fetchExpiry(_transaction, Expiry.Mediation)));
       finalState = TransactionState.ConfirmedAfterEscalation;
     } else {
       revert();
@@ -445,7 +448,7 @@ contract InkProtocol is StandardToken {
 
   function _confirmTransactionAfterExpiry(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Accepted);
-    require(_afterExpiry(_transaction, InkPolicy(_transaction.policy).transactionExpiry()));
+    require(_afterExpiry(_transaction, _fetchExpiry(_transaction, Expiry.Transaction)));
 
     _completeTransaction(_id, _transaction, TransactionState.ConfirmedAfterExpiry, _transaction.seller);
   }
@@ -458,7 +461,7 @@ contract InkProtocol is StandardToken {
     } else if (_transaction.state == TransactionState.Disputed) {
       finalState = TransactionState.RefundedAfterDispute;
     } else if (_transaction.state == TransactionState.Escalated) {
-      require(_afterExpiry(_transaction, _transaction.mediationExpiry));
+      require(_afterExpiry(_transaction, _fetchExpiry(_transaction, Expiry.Mediation)));
       finalState = TransactionState.RefundedAfterEscalation;
     } else {
       revert();
@@ -469,14 +472,14 @@ contract InkProtocol is StandardToken {
 
   function _refundTransactionAfterExpiry(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Disputed);
-    require(_afterExpiry(_transaction, InkPolicy(_transaction.policy).escalationExpiry()));
+    require(_afterExpiry(_transaction, _fetchExpiry(_transaction, Expiry.Escalation)));
 
     _completeTransaction(_id, _transaction, TransactionState.RefundedAfterExpiry, _buyerFor(_transaction));
   }
 
   function _disputeTransaction(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Accepted);
-    require(_afterExpiry(_transaction, InkPolicy(_transaction.policy).fulfillmentExpiry()));
+    require(_afterExpiry(_transaction, _fetchExpiry(_transaction, Expiry.Fulfillment)));
 
     _updateTransactionState(_transaction, TransactionState.Disputed);
 
@@ -493,7 +496,7 @@ contract InkProtocol is StandardToken {
 
   function _settleTransaction(uint256 _id, Transaction storage _transaction) private {
     require(_transaction.state == TransactionState.Escalated);
-    require(_afterExpiry(_transaction, _transaction.mediationExpiry));
+    require(_afterExpiry(_transaction, _fetchExpiry(_transaction, Expiry.Mediation)));
 
     // Divide the escrow amount in half and give it to the buyer. There's
     // a possibility that one account will get slightly more than the other.
@@ -599,52 +602,88 @@ contract InkProtocol is StandardToken {
     _cleanupTransaction(_id, _transaction, true);
   }
 
-  function _fetchMediatorFee(Transaction storage _transaction, TransactionState _finalState) private returns (uint) {
+  function _fetchExpiry(Transaction storage _transaction, Expiry _expiryType) private returns (uint32) {
+    uint32 expiry;
+    bool success;
+
+    if (_expiryType == Expiry.Transaction) {
+      success = _transaction.policy.call(bytes4(keccak256("transactionExpiry()")));
+    } else if (_expiryType == Expiry.Fulfillment) {
+      success = _transaction.policy.call(bytes4(keccak256("fulfillmentExpiry()")));
+    } else if (_expiryType == Expiry.Escalation) {
+      success = _transaction.policy.call(bytes4(keccak256("escalationExpiry()")));
+    } else if (_expiryType == Expiry.Mediation) {
+      success = _transaction.mediator.call(bytes4(keccak256("mediationExpiry()")));
+    }
+
+    if (success) {
+      assembly {
+        // TODO: Switch to 'if' statement when we're on solc 0.4.19.
+        switch eq(returndatasize(), 0x4)
+        case 1 {
+          let _freeMemPointer := mload(0x40)
+          returndatacopy(_freeMemPointer, 0, 0x4)
+          expiry := mload(_freeMemPointer)
+        }
+      }
+    }
+
+    return expiry;
+  }
+
+  function _fetchMediatorFee(Transaction storage _transaction, TransactionState _finalState) private returns (uint256) {
     if (_transaction.mediator == address(0)) {
       return 0;
     }
 
-    uint256 mediatorFee;
-    InkMediator mediator = InkMediator(_transaction.mediator);
+    uint mediatorFee;
+    bool success;
 
     if (_finalState == TransactionState.Confirmed) {
-      mediatorFee = mediator.confirmTransactionFee(_transaction.amount);
+      success = _transaction.mediator.call(bytes4(keccak256("confirmTransactionFee(uint256)")), _transaction.amount);
     } else if (_finalState == TransactionState.ConfirmedAfterExpiry) {
-      mediatorFee = mediator.confirmTransactionAfterExpiryFee(_transaction.amount);
+      success = _transaction.mediator.call(bytes4(keccak256("confirmTransactionAfterExpiryFee(uint256)")), _transaction.amount);
     } else if (_finalState == TransactionState.ConfirmedAfterDispute) {
-      mediatorFee = mediator.confirmTransactionAfterDisputeFee(_transaction.amount);
+      success = _transaction.mediator.call(bytes4(keccak256("confirmTransactionAfterDisputeFee(uint256)")), _transaction.amount);
     } else if (_finalState == TransactionState.ConfirmedByMediator) {
-      mediatorFee = mediator.confirmTransactionByMediatorFee(_transaction.amount);
+      success = _transaction.mediator.call(bytes4(keccak256("confirmTransactionByMediatorFee(uint256)")), _transaction.amount);
     } else if (_finalState == TransactionState.Refunded) {
-      mediatorFee = mediator.refundTransactionFee(_transaction.amount);
+      success = _transaction.mediator.call(bytes4(keccak256("refundTransactionFee(uint256)")), _transaction.amount);
     } else if (_finalState == TransactionState.RefundedAfterExpiry) {
-      mediatorFee = mediator.refundTransactionAfterExpiryFee(_transaction.amount);
+      success = _transaction.mediator.call(bytes4(keccak256("refundTransactionAfterExpiryFee(uint256)")), _transaction.amount);
     } else if (_finalState == TransactionState.RefundedAfterDispute) {
-      mediatorFee = mediator.refundTransactionAfterDisputeFee(_transaction.amount);
+      success = _transaction.mediator.call(bytes4(keccak256("refundTransactionAfterDisputeFee(uint256)")), _transaction.amount);
     } else if (_finalState == TransactionState.RefundedByMediator) {
-      mediatorFee = mediator.refundTransactionByMediatorFee(_transaction.amount);
+      success = _transaction.mediator.call(bytes4(keccak256("refundTransactionByMediatorFee(uint256)")), _transaction.amount);
     }
 
-    // The mediator's fee cannot be more than transaction's amount.
-    require(mediatorFee <= _transaction.amount);
+    if (success) {
+      assembly {
+        // TODO: Switch to 'if' statement when we're on solc 0.4.19.
+        switch eq(returndatasize(), 0x20)
+        case 1 {
+          let _freeMemPointer := mload(0x40)
+          returndatacopy(_freeMemPointer, 0, 0x20)
+          mediatorFee := mload(_freeMemPointer)
+        }
+      }
+
+      // The mediator's fee cannot be more than transaction's amount.
+      if (mediatorFee > _transaction.amount) {
+        mediatorFee = 0;
+      }
+    }
 
     return mediatorFee;
   }
 
   function _resolveMediator(uint256 _transactionId, Transaction storage _transaction, address _mediator) private {
     if (_mediator != address(0)) {
-      bool mediatorAccepted;
+      // The mediator must accept the transaction otherwise we abort.
+      require(InkMediator(_mediator).requestMediator(_transactionId, _transaction.creator, _transaction.amount));
 
+      // Assign the mediator to the transaction.
       _transaction.mediator = _mediator;
-
-      // We need to see if the mediator will accept this transaction.
-      (
-        mediatorAccepted,
-        _transaction.mediationExpiry
-      ) = InkMediator(_mediator).requestMediator(_transactionId, _transaction.amount);
-
-      // The mediator must have accepted the transaction otherwise we abort.
-      require(mediatorAccepted);
     }
   }
 

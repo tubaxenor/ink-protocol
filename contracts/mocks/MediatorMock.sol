@@ -4,10 +4,15 @@ import '../InkMediator.sol';
 import '../InkProtocol.sol';
 
 contract MediatorMock is InkMediator {
-  function requestMediator(uint _transactionId, uint _transactionAmount) external returns (bool, uint32) {
+  function mediationExpiry() external returns(uint32) {
+    return 10 days;
+  }
+
+  function requestMediator(uint _transactionId, address _transactionOwner, uint _transactionAmount) external returns (bool) {
     _transactionId;
+    _transactionOwner;
     _transactionAmount;
-    return (true, 10 days);
+    return true;
   }
 
   function refundTransaction(uint _transactionId, address _ink) external {

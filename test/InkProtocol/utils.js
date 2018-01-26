@@ -212,6 +212,7 @@ async function createTransaction(buyer, seller, options = {}) {
   await token.transfer(buyer, amount)
 
   let createTx = await token.createTransaction(
+    buyer,
     seller,
     amount,
     metadata,
