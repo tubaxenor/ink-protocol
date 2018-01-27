@@ -609,8 +609,6 @@ contract InkProtocol is InkProtocolInterface, StandardToken {
       success = _transaction.mediator.call(bytes4(keccak256("confirmTransactionAfterDisputeFee(uint256)")), _transaction.amount);
     } else if (_finalState == TransactionState.ConfirmedByMediator) {
       mediatorFee = InkMediator(_transaction.mediator).confirmTransactionByMediatorFee(_transaction.amount);
-      require(mediatorFee <= _transaction.amount);
-      return mediatorFee;
     } else if (_finalState == TransactionState.Refunded) {
       success = _transaction.mediator.call(bytes4(keccak256("refundTransactionFee(uint256)")), _transaction.amount);
     } else if (_finalState == TransactionState.RefundedAfterExpiry) {
@@ -619,8 +617,6 @@ contract InkProtocol is InkProtocolInterface, StandardToken {
       success = _transaction.mediator.call(bytes4(keccak256("refundTransactionAfterDisputeFee(uint256)")), _transaction.amount);
     } else if (_finalState == TransactionState.RefundedByMediator) {
       mediatorFee = InkMediator(_transaction.mediator).refundTransactionByMediatorFee(_transaction.amount);
-      require(mediatorFee <= _transaction.amount);
-      return mediatorFee;
     }
 
     if (success) {
@@ -638,6 +634,8 @@ contract InkProtocol is InkProtocolInterface, StandardToken {
       if (mediatorFee > _transaction.amount) {
         mediatorFee = 0;
       }
+    } else {
+      require(mediatorFee <= _transaction.amount);
     }
 
     return mediatorFee;

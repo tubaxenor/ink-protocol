@@ -1,15 +1,15 @@
 pragma solidity ^0.4.11;
 
-contract InkMediator {
+interface InkMediator {
   function mediationExpiry() external returns (uint32);
-  function requestMediator(uint _transactionId, uint _transactionAmount, address _transactionOwner) external returns (bool);
-  function confirmTransactionFee(uint _transactionAmount) external returns (uint);
-  function confirmTransactionAfterExpiryFee(uint _transactionAmount) external returns (uint);
-  function confirmTransactionAfterDisputeFee(uint _transactionAmount) external returns (uint);
-  function confirmTransactionByMediatorFee(uint _transactionAmount) external returns (uint);
-  function refundTransactionFee(uint _transactionAmount) external returns (uint);
-  function refundTransactionAfterExpiryFee(uint _transactionAmount) external returns (uint);
-  function refundTransactionAfterDisputeFee(uint _transactionAmount) external returns (uint);
-  function refundTransactionByMediatorFee(uint _transactionAmount) external returns (uint);
-  function settleTransactionByMediatorFee(uint _buyerAmount, uint _sellerAmount) external returns (uint, uint);
+  function requestMediator(uint256 _transactionId, uint256 _transactionAmount, address _transactionOwner) external returns (bool);
+  function confirmTransactionFee(uint256 _transactionAmount) external returns (uint256);
+  function confirmTransactionAfterExpiryFee(uint256 _transactionAmount) external returns (uint256);
+  function confirmTransactionAfterDisputeFee(uint256 _transactionAmount) external returns (uint256);
+  function confirmTransactionByMediatorFee(uint256 _transactionAmount) external returns (uint256);
+  function refundTransactionFee(uint256 _transactionAmount) external returns (uint256);
+  function refundTransactionAfterExpiryFee(uint256 _transactionAmount) external returns (uint256);
+  function refundTransactionAfterDisputeFee(uint256 _transactionAmount) external returns (uint256);
+  function refundTransactionByMediatorFee(uint256 _transactionAmount) external returns (uint256);
+  function settleTransactionByMediatorFee(uint256 _buyerAmount, uint256 _sellerAmount) external returns (uint256, uint256);
 }

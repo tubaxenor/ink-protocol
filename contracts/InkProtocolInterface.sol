@@ -1,6 +1,6 @@
 pragma solidity ^0.4.11;
 
-contract InkProtocolInterface {
+interface InkProtocolInterface {
   /* Protocol */
   function link(address _to) external;
   function createTransaction(address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator) external;

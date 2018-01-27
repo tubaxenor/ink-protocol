@@ -8,66 +8,66 @@ contract MediatorMock is InkMediator {
     return 10 days;
   }
 
-  function requestMediator(uint _transactionId, address _transactionOwner, uint _transactionAmount) external pure returns (bool) {
+  function requestMediator(uint256 _transactionId, uint256 _transactionAmount, address _transactionOwner) external returns (bool) {
     _transactionId;
     _transactionOwner;
     _transactionAmount;
     return true;
   }
 
-  function refundTransaction(uint _transactionId, address _ink) external {
+  function refundTransaction(uint256 _transactionId, address _ink) external {
     InkProtocol(_ink).refundTransactionByMediator(_transactionId);
   }
 
-  function confirmTransaction(uint _transactionId, address _ink) external {
+  function confirmTransaction(uint256 _transactionId, address _ink) external {
     InkProtocol(_ink).confirmTransactionByMediator(_transactionId);
   }
 
-  function settleTransaction(uint _transactionId, uint _buyerAmount, uint _sellerAmount, address _ink) external {
+  function settleTransaction(uint256 _transactionId, uint256 _buyerAmount, uint256 _sellerAmount, address _ink) external {
     InkProtocol(_ink).settleTransactionByMediator(_transactionId, _buyerAmount, _sellerAmount);
   }
 
-  function confirmTransactionFee(uint _transactionAmount) external returns (uint) {
+  function confirmTransactionFee(uint256 _transactionAmount) external returns (uint256) {
     _transactionAmount;
     return 10;
   }
 
-  function confirmTransactionAfterExpiryFee(uint _transactionAmount) external returns (uint) {
+  function confirmTransactionAfterExpiryFee(uint256 _transactionAmount) external returns (uint256) {
     _transactionAmount;
     return 11;
   }
 
-  function confirmTransactionAfterDisputeFee(uint _transactionAmount) external returns (uint) {
+  function confirmTransactionAfterDisputeFee(uint256 _transactionAmount) external returns (uint256) {
     _transactionAmount;
     return 12;
   }
 
-  function confirmTransactionByMediatorFee(uint _transactionAmount) external returns (uint) {
+  function confirmTransactionByMediatorFee(uint256 _transactionAmount) external returns (uint256) {
     _transactionAmount;
     return 13;
   }
 
-  function refundTransactionFee(uint _transactionAmount) external returns (uint) {
+  function refundTransactionFee(uint256 _transactionAmount) external returns (uint256) {
     _transactionAmount;
     return 14;
   }
 
-  function refundTransactionAfterExpiryFee(uint _transactionAmount) external returns (uint) {
+  function refundTransactionAfterExpiryFee(uint256 _transactionAmount) external returns (uint256) {
     _transactionAmount;
     return 15;
   }
 
-  function refundTransactionAfterDisputeFee(uint _transactionAmount) external returns (uint) {
+  function refundTransactionAfterDisputeFee(uint256 _transactionAmount) external returns (uint256) {
     _transactionAmount;
     return 16;
   }
 
-  function refundTransactionByMediatorFee(uint _transactionAmount) external returns (uint) {
+  function refundTransactionByMediatorFee(uint256 _transactionAmount) external returns (uint256) {
     _transactionAmount;
     return 17;
   }
 
-  function settleTransactionByMediatorFee(uint _buyerAmount, uint _sellerAmount) external returns (uint, uint) {
+  function settleTransactionByMediatorFee(uint256 _buyerAmount, uint256 _sellerAmount) external returns (uint256, uint256) {
     return (_buyerAmount / 10, _sellerAmount / 10);
   }
 
