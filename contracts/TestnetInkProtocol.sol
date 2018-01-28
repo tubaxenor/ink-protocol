@@ -2,8 +2,8 @@ pragma solidity ^0.4.11;
 
 import './InkProtocol.sol';
 
-contract TestNetInk is InkProtocol {
-  string public constant name = "Ink Protocol (TestNet)";
+contract TestnetInkProtocol is InkProtocol {
+  string public constant name = "Ink Protocol (Testnet)";
   string public constant symbol = "TESTXNK";
 
   // Distribute 1,000 TESTXNK tokens at a time.
