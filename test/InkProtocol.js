@@ -1,30 +1,32 @@
-'use strict';
+const $util = require("./util")
+const InkProtocol = artifacts.require("./mocks/InkProtocolMock.sol")
 
-// Commented out -- tests will be rewritten.
+contract("InkProtocol", (accounts) => {
+  let protocol
 
-// let files = [
-//   "./InkProtocol/gasAnalysis",
-//   "./InkProtocol/authorize",
-//   "./InkProtocol/authorizedBy",
-//   "./InkProtocol/createTransaction",
-//   "./InkProtocol/revokeTransaction",
-//   "./InkProtocol/acceptTransaction",
-//   "./InkProtocol/confirmTransaction",
-//   "./InkProtocol/confirmTransactionAfterExpiry",
-//   "./InkProtocol/refundTransaction",
-//   "./InkProtocol/refundTransactionAfterExpiry",
-//   "./InkProtocol/disputeTransaction",
-//   "./InkProtocol/escalateDisputeToMediator",
-//   "./InkProtocol/settleTransaction",
-//   "./InkProtocol/refundTransactionByMediator",
-//   "./InkProtocol/confirmTransactionByMediator",
-//   "./InkProtocol/settleTransactionByMediator",
-//   "./InkProtocol/provideTransactionFeedback"
-//   "./InkProtocol/transfer"
-// ]
-//
-// for (let fileIndex in files) {
-//   contract("InkProtocol", async (accounts) => {
-//     require(files[fileIndex]).call(this, accounts)
-//   })
-// }
+  beforeEach(async () => {
+    protocol = await InkProtocol.new()
+  })
+
+  describe("#InkProtocol()", () => {
+    it("specifies a total supply of 500M tokens", async () => {
+      let totalSupply = await protocol.totalSupply()
+      assert.equal(totalSupply.toNumber(), 500000000e18)
+    })
+
+    it("specifies the token name", async () => {
+      let name = await protocol.name()
+      assert.equal(name, "Ink Protocol")
+    })
+
+    it("specifies the token symbol", async () => {
+      let symbol = await protocol.symbol()
+      assert.equal(symbol, "XNK")
+    })
+
+    it("specifies the token decimals", async () => {
+      let decimals = await protocol.decimals()
+      assert.equal(decimals, 18)
+    })
+  })
+})
