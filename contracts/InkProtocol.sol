@@ -259,9 +259,7 @@ contract InkProtocol is InkProtocolInterface, StandardToken {
     _createTransaction(_seller, _amount, _metadata, _policy, _mediator, address(0));
   }
 
-  // TODO: Find a way to rename this to "createTransaction" without have test
-  // issues.
-  function createTransactionWithOwner(address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator, address _owner) external {
+  function createTransaction(address _seller, uint256 _amount, bytes32 _metadata, address _policy, address _mediator, address _owner) external {
     _createTransaction(_seller, _amount, _metadata, _policy, _mediator, _owner);
   }
 
