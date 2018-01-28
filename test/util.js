@@ -211,26 +211,15 @@ async function createTransaction(buyer, seller, options = {}) {
 
   await protocol.transfer(buyer, amount)
 
-  if (options.owner) {
-    createTx = await protocol.createTransactionWithOwner(
-      seller,
-      amount,
-      metadata,
-      policy.address,
-      mediator.address,
-      options.owner,
-      { from: buyer }
-    )
-  } else {
-    createTx = await protocol.createTransaction(
-      seller,
-      amount,
-      metadata,
-      policy.address,
-      mediator.address,
-      { from: buyer }
-    )
-  }
+  createTx = await protocol.createTransaction(
+    seller,
+    amount,
+    metadata,
+    policy.address,
+    mediator.address,
+    options.owner || 0,
+    { from: buyer }
+  )
 
   let transactionId = getTransactionIdFromTx(createTx)
 
