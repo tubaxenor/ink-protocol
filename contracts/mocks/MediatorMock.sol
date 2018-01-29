@@ -48,6 +48,11 @@ contract MediatorMock is InkMediator {
     _;
   }
 
+  function MediatorMock() public {
+    requestMediatorResponse = true;
+    mediationExpiryResponse = 1 days;
+  }
+
   function setRaiseError(bool _raiseError) external {
     raiseError = _raiseError;
   }
@@ -142,5 +147,47 @@ contract MediatorMock is InkMediator {
 
   function settleTransaction(address _ink, uint256 _transactionId, uint256 _buyerAmount, uint256 _sellerAmount) external {
     InkProtocol(_ink).settleTransactionByMediator(_transactionId, _buyerAmount, _sellerAmount);
+  }
+
+  // Proxy functions
+
+  function proxyRevokeTransaction(address _ink, uint256 _id) external {
+    InkProtocol(_ink).revokeTransaction(_id);
+  }
+
+  function proxyAcceptTransaction(address _ink, uint256 _id) external {
+    InkProtocol(_ink).acceptTransaction(_id);
+  }
+
+  function proxyConfirmTransaction(address _ink, uint256 _id) external {
+    InkProtocol(_ink).confirmTransaction(_id);
+  }
+
+  function proxyConfirmTransactionAfterExpiry(address _ink, uint256 _id) external {
+    InkProtocol(_ink).confirmTransactionAfterExpiry(_id);
+  }
+
+  function proxyRefundTransaction(address _ink, uint256 _id) external {
+    InkProtocol(_ink).refundTransaction(_id);
+  }
+
+  function proxyRefundTransactionAfterExpiry(address _ink, uint256 _id) external {
+    InkProtocol(_ink).refundTransactionAfterExpiry(_id);
+  }
+
+  function proxyDisputeTransaction(address _ink, uint256 _id) external {
+    InkProtocol(_ink).disputeTransaction(_id);
+  }
+
+  function proxyEscalateDisputeToMediator(address _ink, uint256 _id) external {
+    InkProtocol(_ink).escalateDisputeToMediator(_id);
+  }
+
+  function proxySettleTransaction(address _ink, uint256 _id) external {
+    InkProtocol(_ink).settleTransaction(_id);
+  }
+
+  function proxyProvideTransactionFeedback(address _ink, uint256 _id, uint8 _rating, bytes32 _comment) external {
+    InkProtocol(_ink).provideTransactionFeedback(_id, _rating, _comment);
   }
 }

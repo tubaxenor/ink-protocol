@@ -7,6 +7,8 @@ import './InkOwner.sol';
 
 /// @title Ink Protocol: Decentralized reputation and payments for peer-to-peer marketplaces.
 contract InkProtocol is InkProtocolInterface, StandardToken {
+  event DebugString(string desc, string value);
+
   string public constant name = "Ink Protocol";
   string public constant symbol = "XNK";
   uint8 public constant decimals = 18;
