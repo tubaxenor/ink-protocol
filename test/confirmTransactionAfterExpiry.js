@@ -274,38 +274,5 @@ contract("InkProtocol", (accounts) => {
       eventArgs = $util.eventFromTx(tx, $util.events.TransactionConfirmedAfterExpiry).args
       assert.equal(eventArgs.mediatorFee, 0)
     })
-
-    it("ensures enough remaining gas when the mediator errors", async () => {
-      let {
-        protocol,
-        transaction,
-        mediator,
-        policy
-      } = await $util.buildTransaction(buyer, seller, {
-        finalState: $util.states.Accepted
-      })
-
-      let transactionExpiry = await policy.transactionExpiry();
-      $util.advanceTime(transactionExpiry.toNumber())
-
-      await mediator.setRaiseError(true)
-
-      // Limit the gas
-      await protocol.confirmTransactionAfterExpiry(transaction.id, { from: seller, gas: 130000 })
-    })
-
-    it("ensures enough remaining gas when the policy errors", async () => {
-      let {
-        protocol,
-        transaction,
-        mediator
-      } = await $util.buildTransaction(buyer, seller, {
-        finalState: $util.states.Accepted,
-        policy: await ErrorPolicy.new()
-      })
-
-      // This passes without the need time advancing since the expiry is 0.
-      await protocol.confirmTransactionAfterExpiry(transaction.id, { from: seller, gas: 130000 })
-    })
   })
 })
