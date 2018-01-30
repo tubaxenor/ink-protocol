@@ -1,5 +1,6 @@
 const $util = require("./util")
 const InkProtocol = artifacts.require("./mocks/InkProtocolMock.sol")
+const ErrorPolicy = artifacts.require("./mocks/ErrorPolicyMock.sol")
 
 contract("InkProtocol", (accounts) => {
   let buyer = accounts[1]
@@ -16,7 +17,9 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      await $util.advanceTime(policy.escalationExpiry())
+      // let expiry = await policy.escalationExpiry()
+
+      await $util.advanceTime(86400 * 6)
 
       await $util.assertVMExceptionAsync(protocol.refundTransactionAfterExpiry(transaction.id, { from: seller }))
     })
@@ -32,7 +35,9 @@ contract("InkProtocol", (accounts) => {
         owner: true
       })
 
-      await $util.advanceTime(policy.escalationExpiry())
+      // let expiry = await policy.escalationExpiry()
+
+      await $util.advanceTime(86400 * 6)
 
       await $util.assertVMExceptionAsync(owner.proxyRefundTransactionAfterExpiry(protocol.address, transaction.id))
     })
@@ -47,7 +52,9 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      await $util.advanceTime(policy.escalationExpiry())
+      // let expiry = await policy.escalationExpiry()
+
+      await $util.advanceTime(86400 * 6)
 
       await $util.assertVMExceptionAsync(mediator.proxyRefundTransactionAfterExpiry(protocol.address, transaction.id))
     })
@@ -61,7 +68,9 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      await $util.advanceTime(policy.escalationExpiry())
+      // let expiry = await policy.escalationExpiry()
+
+      await $util.advanceTime(86400 * 6)
 
       await $util.assertVMExceptionAsync(policy.proxyRefundTransactionAfterExpiry(protocol.address, transaction.id))
     })
@@ -75,7 +84,9 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      await $util.advanceTime(policy.escalationExpiry())
+      // let expiry = await policy.escalationExpiry()
+
+      await $util.advanceTime(86400 * 6)
 
       await $util.assertVMExceptionAsync(protocol.refundTransactionAfterExpiry(transaction.id, { from: unknown }))
     })
@@ -83,7 +94,9 @@ contract("InkProtocol", (accounts) => {
     it("fails when transaction does not exist", async () => {
       let protocol = await InkProtocol.new()
 
-      await $util.advanceTime(escalationExpiry())
+      // let expiry = await policy.escalationExpiry()
+
+      await $util.advanceTime(86400 * 6)
 
       await $util.assertVMExceptionAsync(protocol.refundTransactionAfterExpiry(0, {from: buyer}))
     })
@@ -96,8 +109,6 @@ contract("InkProtocol", (accounts) => {
       } = await $util.buildTransaction(buyer, seller, {
         finalState: $util.states.Disputed
       })
-
-      await $util.advanceTime(policy.escalationExpiry())
 
       await $util.assertVMExceptionAsync(protocol.refundTransactionAfterExpiry(transaction.id, { from: buyer }))
     })
@@ -114,20 +125,55 @@ contract("InkProtocol", (accounts) => {
       // 6 days for escalationExpiry
       $util.advanceTime(86400 * 6)
 
-      await protocol.refundTransactionAfterExpiry(transaction.id, { from: seller })
+      await protocol.refundTransactionAfterExpiry(transaction.id, { from: buyer })
 
       transaction = await $util.getTransaction(transaction.id, protocol)
 
-      // It fails if using the default fulfillment expiry
+      // It fails if using the default expiry
       assert.equal(transaction.state, $util.states.RefundedAfterExpiry)
     })
 
-    it("sets escalation expiry to 0 when policy raises an error")
-    it("passes the transaction's amount to the mediator")
-    it("transfers the mediator fee to the mediator")
-    it("emits the TransactionRefundedAfterExpiry event")
-    it("transfers the tokens to the buyer")
-    it("collects 0 fee when mediator raises an error")
-    it("collects 0 fee when mediator returns a fee higher than the transaction amount")
+    it("sets escalation expiry to 0 when policy raises an error", async () => {
+      let policy = await ErroredPolicy.new()
+
+      let {
+        protocol,
+        transaction
+      } = await $util.buildTransaction(buyer, seller, {
+        finalState: $util.states.Disputed,
+        policy: policy
+      })
+
+      await protocol.refundTransactionAfterExpiry(transaction.id, { from: buyer })
+
+      transaction = await $util.getTransaction(transaction.id, protocol)
+
+      // This passes without and time advance since the expiry is 0
+      assert.equal(transaction.state, $util.states.RefundedAfterExpiry)
+    })
+
+    it("passes the transaction's amount to the mediator", async () => {
+
+    })
+
+    it("transfers the mediator fee to the mediator", async () => {
+
+    })
+
+    it("emits the TransactionRefundedAfterExpiry event", async () => {
+
+    })
+
+    it("transfers the tokens to the buyer", async () => {
+
+    })
+
+    it("collects 0 fee when mediator raises an error", async () => {
+
+    })
+
+    it("collects 0 fee when mediator returns a fee higher than the transaction amount", async () => {
+
+    })
   })
 })
