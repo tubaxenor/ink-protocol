@@ -51,6 +51,16 @@ contract MediatorMock is InkMediator {
   function MediatorMock() public {
     requestMediatorResponse = true;
     mediationExpiryResponse = 1 days;
+    confirmTransactionFeeResponse = 1;
+    confirmTransactionAfterExpiryFeeResponse = 1;
+    confirmTransactionAfterDisputeFeeResponse = 1;
+    confirmTransactionByMediatorFeeResponse = 1;
+    refundTransactionFeeResponse = 1;
+    refundTransactionAfterExpiryFeeResponse = 1;
+    refundTransactionAfterDisputeFeeResponse = 1;
+    refundTransactionByMediatorFeeResponse = 1;
+    settleTransactionByMediatorFeeResponseForBuyer = 1;
+    settleTransactionByMediatorFeeResponseForSeller = 1;
   }
 
   function setRaiseError(bool _raiseError) external {
