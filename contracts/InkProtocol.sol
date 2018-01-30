@@ -10,6 +10,7 @@ contract InkProtocol is InkProtocolInterface, StandardToken {
   string public constant name = "Ink Protocol";
   string public constant symbol = "XNK";
   uint8 public constant decimals = 18;
+  uint256 public constant burnedSupply = 0;
 
   enum Expiry {
     Transaction, // 0
@@ -209,6 +210,9 @@ contract InkProtocol is InkProtocolInterface, StandardToken {
   function InkProtocol() public {
     // A total supply of 500,000,000 Ink Tokens (XNK).
     totalSupply_ = 500000000000000000000000000;
+
+    // Burn unsold tokens.
+    totalSupply_ = totalSupply_.sub(burnedSupply);
 
     // TODO: Add distribution logic here.
   }
