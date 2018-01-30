@@ -102,7 +102,7 @@ contract("InkProtocol", (accounts) => {
 
         mediator.setRefundTransactionFeeResponse(fee)
 
-        originalMediatorBalance = await $util.getBalance(mediator.address, protocol)
+        let originalMediatorBalance = await $util.getBalance(mediator.address, protocol)
 
         await protocol.refundTransaction(transaction.id, { from: seller })
 
@@ -132,7 +132,7 @@ contract("InkProtocol", (accounts) => {
           finalState: $util.states.Accepted
         })
 
-        originalBuyerBalance = await $util.getBalance(buyer, protocol)
+        let originalBuyerBalance = await $util.getBalance(buyer, protocol)
 
         await protocol.refundTransaction(transaction.id, { from: seller })
 
@@ -208,7 +208,7 @@ contract("InkProtocol", (accounts) => {
 
         mediator.setRefundTransactionAfterDisputeFeeResponse(fee)
 
-        originalMediatorBalance = await $util.getBalance(mediator.address, protocol)
+        let originalMediatorBalance = await $util.getBalance(mediator.address, protocol)
 
         await protocol.refundTransaction(transaction.id, { from: seller })
 
@@ -238,7 +238,7 @@ contract("InkProtocol", (accounts) => {
           finalState: $util.states.Disputed
         })
 
-        originalBuyerBalance = await $util.getBalance(buyer, protocol)
+        let originalBuyerBalance = await $util.getBalance(buyer, protocol)
 
         await protocol.refundTransaction(transaction.id, { from: seller })
 
@@ -371,7 +371,7 @@ contract("InkProtocol", (accounts) => {
 
         $util.advanceTime(600)
 
-        originalBuyerBalance = await $util.getBalance(buyer, protocol)
+        let originalBuyerBalance = await $util.getBalance(buyer, protocol)
 
         await protocol.refundTransaction(transaction.id, { from: seller })
 
