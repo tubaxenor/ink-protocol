@@ -82,7 +82,7 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Accepted
       })
 
-      fulfillmentExpiry = await policy.fulfillmentExpiry()
+      let fulfillmentExpiry = await policy.fulfillmentExpiry()
       // 10 mins before expiry
       $util.advanceTime(fulfillmentExpiry.toNumber() - 600)
 
@@ -102,7 +102,7 @@ contract("InkProtocol", (accounts) => {
 
       await protocol.disputeTransaction(transaction.id, {from: buyer})
 
-      transaction = await $util.getTransaction(transaction.id, protocol)
+      let transaction = await $util.getTransaction(transaction.id, protocol)
 
       // It fails if using the default fulfillment expiry
       assert.equal(transaction.state, $util.states.Disputed)
@@ -120,7 +120,7 @@ contract("InkProtocol", (accounts) => {
 
       await protocol.disputeTransaction(transaction.id, {from: buyer})
 
-      transaction = await $util.getTransaction(transaction.id, protocol)
+      let transaction = await $util.getTransaction(transaction.id, protocol)
 
       // This passes without and time advance since the expiry is 0
       assert.equal(transaction.state, $util.states.Disputed)
@@ -135,7 +135,7 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Accepted
       })
 
-      fulfillmentExpiry = await policy.fulfillmentExpiry()
+      let fulfillmentExpiry = await policy.fulfillmentExpiry()
 
       $util.advanceTime(fulfillmentExpiry.toNumber())
 
