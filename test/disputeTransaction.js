@@ -1,11 +1,11 @@
 const $util = require("./util")
 const InkProtocol = artifacts.require("./mocks/InkProtocolMock.sol")
-const ErroredPolicy = artifacts.require("./mocks/ErrorPolicyMock.sol")
+const ErrorPolicy = artifacts.require("./mocks/ErrorPolicyMock.sol")
 
 contract("InkProtocol", (accounts) => {
-  buyer = accounts[1]
-  seller = accounts[2]
-  unknown = accounts[accounts.length - 1]
+  let buyer = accounts[1]
+  let seller = accounts[2]
+  let unknown = accounts[accounts.length - 1]
 
   describe("#disputeTransaction()", () => {
     it("fails for seller", async () => {
@@ -83,8 +83,8 @@ contract("InkProtocol", (accounts) => {
       })
 
       let fulfillmentExpiry = await policy.fulfillmentExpiry()
-      // 10 mins before expiry
-      $util.advanceTime(fulfillmentExpiry.toNumber() - 600)
+      // 10 seconds before expiry
+      $util.advanceTime(fulfillmentExpiry.toNumber() - 10)
 
       await $util.assertVMExceptionAsync(protocol.disputeTransaction(transaction.id, {from: buyer}))
     })
@@ -100,7 +100,7 @@ contract("InkProtocol", (accounts) => {
       // 7 days for fulfillmentExpiry
       $util.advanceTime(86400 * 7)
 
-      await protocol.disputeTransaction(transaction.id, {from: buyer})
+      await protocol.disputeTransaction(transaction.id, { from: buyer })
 
       let transaction = await $util.getTransaction(transaction.id, protocol)
 
@@ -136,7 +136,6 @@ contract("InkProtocol", (accounts) => {
       })
 
       let fulfillmentExpiry = await policy.fulfillmentExpiry()
-
       $util.advanceTime(fulfillmentExpiry.toNumber())
 
       let tx = await protocol.disputeTransaction(transaction.id, {from: buyer})
