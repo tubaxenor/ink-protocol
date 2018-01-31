@@ -29,7 +29,7 @@
     "comma-number": "^2.0.0",
     "ethereumjs-util": "^5.1.2",
     "ganache-cli": "^6.0.3",
-    "truffle": "^4.0.4",
+    "truffle": "github:trufflesuite/truffle#4757c1",
     "truffle-flattener": "^1.2.0"
   }
 }
