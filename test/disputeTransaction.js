@@ -102,14 +102,14 @@ contract("InkProtocol", (accounts) => {
 
       await protocol.disputeTransaction(transaction.id, { from: buyer })
 
-      let transaction = await $util.getTransaction(transaction.id, protocol)
+      let txn = await $util.getTransaction(transaction.id, protocol)
 
       // It fails if using the default fulfillment expiry
-      assert.equal(transaction.state, $util.states.Disputed)
+      assert.equal(txn.state, $util.states.Disputed)
     })
 
     it("sets fulfillment expiry to 0 when policy raises an error", async () => {
-      let policy = await ErroredPolicy.new()
+      let policy = await ErrorPolicy.new()
       let {
         protocol,
         transaction
@@ -120,10 +120,10 @@ contract("InkProtocol", (accounts) => {
 
       await protocol.disputeTransaction(transaction.id, {from: buyer})
 
-      let transaction = await $util.getTransaction(transaction.id, protocol)
+      let txn = await $util.getTransaction(transaction.id, protocol)
 
       // This passes without and time advance since the expiry is 0
-      assert.equal(transaction.state, $util.states.Disputed)
+      assert.equal(txn.state, $util.states.Disputed)
     })
 
     it("emits the TransactionDisputed event", async () => {
