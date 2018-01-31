@@ -129,25 +129,24 @@ contract("InkProtocol", (accounts) => {
       assert.equal(txn.state, $util.states.RefundedAfterExpiry)
     })
 
-    // Can't do this for now since while transit to Disputed policy will also raises error...
-    // it("sets escalation expiry to 0 when policy raises an error", async () => {
-    //   let policy = await ErrorPolicy.new()
-    //
-    //   let {
-    //     protocol,
-    //     transaction
-    //   } = await $util.buildTransaction(buyer, seller, {
-    //     finalState: $util.states.Disputed,
-    //     policy: policy
-    //   })
-    //
-    //   await protocol.refundTransactionAfterExpiry(transaction.id, { from: buyer })
-    //
-    //   let txn = await $util.getTransaction(transaction.id, protocol)
-    //
-    //   // This passes without and time advance since the expiry is 0
-    //   assert.equal(txn.state, $util.states.RefundedAfterExpiry)
-    // })
+    it("sets escalation expiry to 0 when policy raises an error", async () => {
+      let policy = await ErrorPolicy.new()
+
+      let {
+        protocol,
+        transaction
+      } = await $util.buildTransaction(buyer, seller, {
+        finalState: $util.states.Disputed,
+        policy: policy
+      })
+
+      await protocol.refundTransactionAfterExpiry(transaction.id, { from: buyer })
+
+      let txn = await $util.getTransaction(transaction.id, protocol)
+
+      // This passes without and time advance since the expiry is 0
+      assert.equal(txn.state, $util.states.RefundedAfterExpiry)
+    })
 
     it("passes the transaction's amount to the mediator", async () => {
       let {
