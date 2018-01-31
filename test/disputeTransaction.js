@@ -3,9 +3,15 @@ const InkProtocol = artifacts.require("./mocks/InkProtocolMock.sol")
 const ErrorPolicy = artifacts.require("./mocks/ErrorPolicyMock.sol")
 
 contract("InkProtocol", (accounts) => {
-  let buyer = accounts[1]
-  let seller = accounts[2]
-  let unknown = accounts[accounts.length - 1]
+  let buyer,
+      seller,
+      unknown
+
+  beforeEach(() => {
+    buyer = accounts[1]
+    seller = accounts[2]
+    unknown = accounts[accounts.length - 1]
+  })
 
   describe("#disputeTransaction()", () => {
     it("fails for seller", async () => {
@@ -82,9 +88,8 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Accepted
       })
 
-      let fulfillmentExpiry = await policy.fulfillmentExpiry()
-      // 10 seconds before expiry
-      $util.advanceTime(fulfillmentExpiry.toNumber() - 10)
+      let fulfillmentExpiry = (await policy.fulfillmentExpiry()).toNumber()
+      $util.advanceTime(fulfillmentExpiry - 10)
 
       await $util.assertVMExceptionAsync(protocol.disputeTransaction(transaction.id, {from: buyer}))
     })
@@ -92,38 +97,27 @@ contract("InkProtocol", (accounts) => {
     it("calls the policy for the fulfillment expiry", async () => {
       let {
         protocol,
+        policy,
         transaction
       } = await $util.buildTransaction(buyer, seller, {
         finalState: $util.states.Accepted
       })
 
-      // 7 days for fulfillmentExpiry
-      $util.advanceTime(86400 * 7)
+      $util.advanceTime((await policy.fulfillmentExpiry()).toNumber())
 
       await protocol.disputeTransaction(transaction.id, { from: buyer })
-
-      let txn = await $util.getTransaction(transaction.id, protocol)
-
-      // It fails if using the default fulfillment expiry
-      assert.equal(txn.state, $util.states.Disputed)
     })
 
     it("sets fulfillment expiry to 0 when policy raises an error", async () => {
-      let policy = await ErrorPolicy.new()
       let {
         protocol,
         transaction
       } = await $util.buildTransaction(buyer, seller, {
         finalState: $util.states.Accepted,
-        policy: policy
+        policy: await ErrorPolicy.new()
       })
 
-      await protocol.disputeTransaction(transaction.id, {from: buyer})
-
-      let txn = await $util.getTransaction(transaction.id, protocol)
-
-      // This passes without and time advance since the expiry is 0
-      assert.equal(txn.state, $util.states.Disputed)
+      await protocol.disputeTransaction(transaction.id, { from: buyer })
     })
 
     it("emits the TransactionDisputed event", async () => {
@@ -135,12 +129,10 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Accepted
       })
 
-      let fulfillmentExpiry = await policy.fulfillmentExpiry()
-      $util.advanceTime(fulfillmentExpiry.toNumber())
+      $util.advanceTime((await policy.fulfillmentExpiry()).toNumber())
 
       let tx = await protocol.disputeTransaction(transaction.id, {from: buyer})
       let eventArgs = $util.eventFromTx(tx, $util.events.TransactionDisputed).args
-
       assert.equal(eventArgs.id.toNumber(), transaction.id)
     })
   })
