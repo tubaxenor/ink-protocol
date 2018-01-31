@@ -98,15 +98,13 @@ contract("InkProtocol", (accounts) => {
           finalState: $util.states.Accepted
         })
 
-        let fee = 10
+        let mediatorFee = 10
 
-        mediator.setRefundTransactionFeeResponse(fee)
-
-        let originalMediatorBalance = await $util.getBalance(mediator.address, protocol)
+        mediator.setRefundTransactionFeeResponse(mediatorFee)
 
         await protocol.refundTransaction(transaction.id, { from: seller })
 
-        assert.equal(await $util.getBalance(mediator.address, protocol), originalMediatorBalance + fee)
+        assert.equal(await $util.getBalance(mediator.address, protocol), mediatorFee)
       })
 
       it("emits the TransactionRefunded event", async () => {
@@ -132,8 +130,6 @@ contract("InkProtocol", (accounts) => {
           finalState: $util.states.Accepted
         })
 
-        let originalBuyerBalance = await $util.getBalance(buyer, protocol)
-
         await protocol.refundTransaction(transaction.id, { from: seller })
 
         assert.equal(await $util.getBalance(buyer, protocol), transaction.amount.toNumber())
@@ -148,11 +144,11 @@ contract("InkProtocol", (accounts) => {
           finalState: $util.states.Accepted
         })
 
-        let fee = 10
+        let mediatorFee = 10
 
         mediator.setRaiseError(true)
 
-        mediator.setRefundTransactionFeeResponse(fee)
+        mediator.setRefundTransactionFeeResponse(mediatorFee)
 
         await protocol.refundTransaction(transaction.id, { from: seller })
 
@@ -168,9 +164,9 @@ contract("InkProtocol", (accounts) => {
           finalState: $util.states.Accepted
         })
 
-        let fee = transaction.amount + 10
+        let mediatorFee = transaction.amount + 10
 
-        mediator.setRefundTransactionFeeResponse(fee)
+        mediator.setRefundTransactionFeeResponse(mediatorFee)
 
         let tx = await protocol.refundTransaction(transaction.id, { from: seller })
 
@@ -204,15 +200,13 @@ contract("InkProtocol", (accounts) => {
           finalState: $util.states.Disputed
         })
 
-        let fee = 10
+        let mediatorFee = 10
 
-        mediator.setRefundTransactionAfterDisputeFeeResponse(fee)
-
-        let originalMediatorBalance = await $util.getBalance(mediator.address, protocol)
+        mediator.setRefundTransactionAfterDisputeFeeResponse(mediatorFee)
 
         await protocol.refundTransaction(transaction.id, { from: seller })
 
-        assert.equal(await $util.getBalance(mediator.address, protocol), originalMediatorBalance + fee)
+        assert.equal(await $util.getBalance(mediator.address, protocol), mediatorFee)
       })
 
       it("emits the TransactionRefundedAfterDispute event", async () => {
@@ -238,8 +232,6 @@ contract("InkProtocol", (accounts) => {
           finalState: $util.states.Disputed
         })
 
-        let originalBuyerBalance = await $util.getBalance(buyer, protocol)
-
         await protocol.refundTransaction(transaction.id, { from: seller })
 
         assert.equal(await $util.getBalance(buyer, protocol), transaction.amount.toNumber())
@@ -254,11 +246,11 @@ contract("InkProtocol", (accounts) => {
           finalState: $util.states.Disputed
         })
 
-        let fee = 10
+        let mediatorFee = 10
 
         mediator.setRaiseError(true)
 
-        mediator.setRefundTransactionAfterDisputeFeeResponse(fee)
+        mediator.setRefundTransactionAfterDisputeFeeResponse(mediatorFee)
 
         await protocol.refundTransaction(transaction.id, { from: seller })
 
@@ -274,9 +266,9 @@ contract("InkProtocol", (accounts) => {
           finalState: $util.states.Disputed
         })
 
-        let fee = transaction.amount + 10
+        let mediatorFee = transaction.amount + 10
 
-        mediator.setRefundTransactionAfterDisputeFeeResponse(fee)
+        mediator.setRefundTransactionAfterDisputeFeeResponse(mediatorFee)
 
         await protocol.refundTransaction(transaction.id, { from: seller })
 
@@ -370,8 +362,6 @@ contract("InkProtocol", (accounts) => {
         mediator.setMediationExpiryResponse(600)
 
         $util.advanceTime(600)
-
-        let originalBuyerBalance = await $util.getBalance(buyer, protocol)
 
         await protocol.refundTransaction(transaction.id, { from: seller })
 
