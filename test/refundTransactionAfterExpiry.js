@@ -1,6 +1,7 @@
 const $util = require("./util")
 const InkProtocol = artifacts.require("./mocks/InkProtocolMock.sol")
 const ErrorPolicy = artifacts.require("./mocks/ErrorPolicyMock.sol")
+const Policy = artifacts.require("./mocks/PolicyMock.sol")
 
 contract("InkProtocol", (accounts) => {
   let buyer = accounts[1]
@@ -17,9 +18,8 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      // let expiry = await policy.escalationExpiry()
-
-      await $util.advanceTime(86400 * 6)
+      let expiry = await policy.escalationExpiry()
+      $util.advanceTime(expiry.toNumber())
 
       await $util.assertVMExceptionAsync(protocol.refundTransactionAfterExpiry(transaction.id, { from: seller }))
     })
@@ -35,9 +35,8 @@ contract("InkProtocol", (accounts) => {
         owner: true
       })
 
-      // let expiry = await policy.escalationExpiry()
-
-      await $util.advanceTime(86400 * 6)
+      let expiry = await policy.escalationExpiry()
+      $util.advanceTime(expiry.toNumber())
 
       await $util.assertVMExceptionAsync(owner.proxyRefundTransactionAfterExpiry(protocol.address, transaction.id))
     })
@@ -52,9 +51,8 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      // let expiry = await policy.escalationExpiry()
-
-      await $util.advanceTime(86400 * 6)
+      let expiry = await policy.escalationExpiry()
+      $util.advanceTime(expiry.toNumber())
 
       await $util.assertVMExceptionAsync(mediator.proxyRefundTransactionAfterExpiry(protocol.address, transaction.id))
     })
@@ -68,9 +66,8 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      // let expiry = await policy.escalationExpiry()
-
-      await $util.advanceTime(86400 * 6)
+      let expiry = await policy.escalationExpiry()
+      $util.advanceTime(expiry.toNumber())
 
       await $util.assertVMExceptionAsync(policy.proxyRefundTransactionAfterExpiry(protocol.address, transaction.id))
     })
@@ -84,19 +81,18 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      // let expiry = await policy.escalationExpiry()
-
-      await $util.advanceTime(86400 * 6)
+      let expiry = await policy.escalationExpiry()
+      $util.advanceTime(expiry.toNumber())
 
       await $util.assertVMExceptionAsync(protocol.refundTransactionAfterExpiry(transaction.id, { from: unknown }))
     })
 
     it("fails when transaction does not exist", async () => {
       let protocol = await InkProtocol.new()
+      let policy = await Policy.new()
 
-      // let expiry = await policy.escalationExpiry()
-
-      await $util.advanceTime(86400 * 6)
+      let expiry = await policy.escalationExpiry()
+      $util.advanceTime(expiry.toNumber())
 
       await $util.assertVMExceptionAsync(protocol.refundTransactionAfterExpiry(0, {from: buyer}))
     })
@@ -134,7 +130,7 @@ contract("InkProtocol", (accounts) => {
     })
 
     it("sets escalation expiry to 0 when policy raises an error", async () => {
-      let policy = await ErroredPolicy.new()
+      let policy = await ErrorPolicy.new()
 
       let {
         protocol,
