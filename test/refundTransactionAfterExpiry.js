@@ -4,9 +4,15 @@ const ErrorPolicy = artifacts.require("./mocks/ErrorPolicyMock.sol")
 const Policy = artifacts.require("./mocks/PolicyMock.sol")
 
 contract("InkProtocol", (accounts) => {
-  let buyer = accounts[1]
-  let seller = accounts[2]
-  let unknown = accounts[accounts.length - 1]
+  let buyer,
+      seller,
+      unknown
+
+  beforeEach(() => {
+    buyer = accounts[1]
+    seller = accounts[2]
+    unknown = accounts[accounts.length - 1]
+  })
 
   describe("#refundTransactionAfterExpiry()", () => {
     it("fails for seller", async () => {
@@ -18,8 +24,7 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      let expiry = await policy.escalationExpiry()
-      $util.advanceTime(expiry.toNumber())
+      $util.advanceTime((await policy.escalationExpiry()).toNumber())
 
       await $util.assertVMExceptionAsync(protocol.refundTransactionAfterExpiry(transaction.id, { from: seller }))
     })
@@ -35,8 +40,7 @@ contract("InkProtocol", (accounts) => {
         owner: true
       })
 
-      let expiry = await policy.escalationExpiry()
-      $util.advanceTime(expiry.toNumber())
+      $util.advanceTime((await policy.escalationExpiry()).toNumber())
 
       await $util.assertVMExceptionAsync(owner.proxyRefundTransactionAfterExpiry(protocol.address, transaction.id))
     })
@@ -51,8 +55,7 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      let expiry = await policy.escalationExpiry()
-      $util.advanceTime(expiry.toNumber())
+      $util.advanceTime((await policy.escalationExpiry()).toNumber())
 
       await $util.assertVMExceptionAsync(mediator.proxyRefundTransactionAfterExpiry(protocol.address, transaction.id))
     })
@@ -66,8 +69,7 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      let expiry = await policy.escalationExpiry()
-      $util.advanceTime(expiry.toNumber())
+      $util.advanceTime((await policy.escalationExpiry()).toNumber())
 
       await $util.assertVMExceptionAsync(policy.proxyRefundTransactionAfterExpiry(protocol.address, transaction.id))
     })
@@ -81,8 +83,7 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      let expiry = await policy.escalationExpiry()
-      $util.advanceTime(expiry.toNumber())
+      $util.advanceTime((await policy.escalationExpiry()).toNumber())
 
       await $util.assertVMExceptionAsync(protocol.refundTransactionAfterExpiry(transaction.id, { from: unknown }))
     })
@@ -91,15 +92,13 @@ contract("InkProtocol", (accounts) => {
       let protocol = await InkProtocol.new()
       let policy = await Policy.new()
 
-      let expiry = await policy.escalationExpiry()
-      $util.advanceTime(expiry.toNumber())
+      $util.advanceTime((await policy.escalationExpiry()).toNumber())
 
       await $util.assertVMExceptionAsync(protocol.refundTransactionAfterExpiry(0, {from: buyer}))
     })
 
     it("fails before escalation expiry", async () => {
       let {
-        policy,
         protocol,
         transaction
       } = await $util.buildTransaction(buyer, seller, {
@@ -118,34 +117,21 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      // 6 days for escalationExpiry
-      $util.advanceTime(86400 * 6)
+      $util.advanceTime((await policy.escalationExpiry()).toNumber())
 
       await protocol.refundTransactionAfterExpiry(transaction.id, { from: buyer })
-
-      let txn = await $util.getTransaction(transaction.id, protocol)
-
-      // It fails if using the default expiry
-      assert.equal(txn.state, $util.states.RefundedAfterExpiry)
     })
 
     it("sets escalation expiry to 0 when policy raises an error", async () => {
-      let policy = await ErrorPolicy.new()
-
       let {
         protocol,
         transaction
       } = await $util.buildTransaction(buyer, seller, {
         finalState: $util.states.Disputed,
-        policy: policy
+        policy: await ErrorPolicy.new()
       })
 
       await protocol.refundTransactionAfterExpiry(transaction.id, { from: buyer })
-
-      let txn = await $util.getTransaction(transaction.id, protocol)
-
-      // This passes without and time advance since the expiry is 0
-      assert.equal(txn.state, $util.states.RefundedAfterExpiry)
     })
 
     it("passes the transaction's amount to the mediator", async () => {
@@ -158,21 +144,18 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      let expiry = await policy.escalationExpiry()
-      $util.advanceTime(expiry.toNumber())
+      $util.advanceTime((await policy.escalationExpiry()).toNumber())
 
-      let mediatorFee = 10
-
-      await mediator.setRefundTransactionAfterExpiryFeeResponse(mediatorFee)
-
+      await mediator.setRefundTransactionAfterExpiryFeeResponse(10)
       await protocol.refundTransactionAfterExpiry(transaction.id, { from: buyer })
 
       let event = await $util.eventFromContract(mediator, "RefundTransactionAfterExpiryFeeCalled")
-
       assert.equal(event.args.transactionAmount.toNumber(), transaction.amount.toNumber())
     })
 
     it("transfers the mediator fee to the mediator", async () => {
+      let mediatorFee = 10
+
       let {
         policy,
         mediator,
@@ -182,18 +165,13 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      let expiry = await policy.escalationExpiry()
-      $util.advanceTime(expiry.toNumber())
-
-      let mediatorFee = 10
+      $util.advanceTime((await policy.escalationExpiry()).toNumber())
 
       await mediator.setRefundTransactionAfterExpiryFeeResponse(mediatorFee)
-
       await protocol.refundTransactionAfterExpiry(transaction.id, { from: buyer })
 
-      let mediatorBalance = await $util.getBalance(mediator.address, protocol)
-
-      assert.equal(mediatorBalance, mediatorFee)
+      assert.equal(await $util.getBalance(protocol.address, protocol), 0)
+      assert.equal(await $util.getBalance(mediator.address, protocol), mediatorFee)
     })
 
     it("emits the TransactionRefundedAfterExpiry event", async () => {
@@ -205,17 +183,17 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      let expiry = await policy.escalationExpiry()
-      $util.advanceTime(expiry.toNumber())
+      $util.advanceTime((await policy.escalationExpiry()).toNumber())
 
       let tx = await protocol.refundTransactionAfterExpiry(transaction.id, { from: buyer })
-
       let eventArgs = $util.eventFromTx(tx, $util.events.TransactionRefundedAfterExpiry).args
 
       assert.equal(eventArgs.id, transaction.id)
     })
 
     it("transfers the tokens to the buyer", async () => {
+      let mediatorFee = 10
+
       let {
         policy,
         mediator,
@@ -225,15 +203,12 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      let mediatorFee = 10
+      $util.advanceTime((await policy.escalationExpiry()).toNumber())
 
       await mediator.setRefundTransactionAfterExpiryFeeResponse(mediatorFee)
-
-      let expiry = await policy.escalationExpiry()
-      $util.advanceTime(expiry.toNumber())
-
       await protocol.refundTransactionAfterExpiry(transaction.id, { from: buyer })
 
+      assert.equal(await $util.getBalance(protocol.address, protocol), 0)
       assert.equal(await $util.getBalance(buyer, protocol), transaction.amount - mediatorFee)
     })
 
@@ -247,15 +222,9 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      let expiry = await policy.escalationExpiry()
-      $util.advanceTime(expiry.toNumber())
-
-      let mediatorFee = 10
+      $util.advanceTime((await policy.escalationExpiry()).toNumber())
 
       await mediator.setRaiseError(true)
-
-      await mediator.setRefundTransactionAfterExpiryFeeResponse(mediatorFee)
-
       await protocol.refundTransactionAfterExpiry(transaction.id, { from: buyer })
 
       assert.equal(await $util.getBalance(mediator.address, protocol), 0)
@@ -271,13 +240,9 @@ contract("InkProtocol", (accounts) => {
         finalState: $util.states.Disputed
       })
 
-      let expiry = await policy.escalationExpiry()
-      $util.advanceTime(expiry.toNumber())
+      $util.advanceTime((await policy.escalationExpiry()).toNumber())
 
-      let mediatorFee = transaction.amount + 10
-
-      await mediator.setRefundTransactionAfterExpiryFeeResponse(mediatorFee)
-
+      await mediator.setRefundTransactionAfterExpiryFeeResponse(transaction.amount + 1)
       await protocol.refundTransactionAfterExpiry(transaction.id, { from: buyer })
 
       assert.equal(await $util.getBalance(mediator.address, protocol), 0)
