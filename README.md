@@ -6,7 +6,7 @@
 
 Ink Protocol is implemented on Ethereum as a Smart Contract and includes an ERC20-compatible utility token, called `XNK`, which is used for payments. `XNK` is a general purpose cryptocurrency that is:
 
-- Fixed supply (480,374,026.3021045 `XNK`)
+- Fixed supply (`480,374,026.3021045 XNK`)
 - Fractionally divisible
 - Non-inflationary
 - Fungible and transferable
