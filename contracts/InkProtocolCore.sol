@@ -207,7 +207,7 @@ contract InkProtocolCore is InkProtocolInterface, StandardToken {
     Constructor
   */
 
-  function InkProtocolCore() public {
+  function InkProtocolCore() internal {
     // Start with a total supply of 500,000,000 Ink Tokens (XNK).
     totalSupply_ = 500000000000000000000000000;
   }
